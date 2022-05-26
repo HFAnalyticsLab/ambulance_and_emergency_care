@@ -42,6 +42,6 @@ buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulan
 
 s3write_using(amb_dta_clean # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
-              , object = 'amb_dta_clean.csv' # Name of the file to save to (include file type)
+              , object = 'amb_RT_clean.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
 
