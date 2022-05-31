@@ -33,19 +33,12 @@ c(paste0("c4_",c("mean", "90thcent"))))
 amb_dta_plot<-amb_dta %>% 
  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
 
-try<-amb_dta_plot %>% 
+amb_dta_plot<-amb_dta_plot %>% 
   mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
   mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
   mutate(resp_time2=as_hms(resp_time2)) %>% 
   mutate(date2=yearmonth(date))
 
-
-targ<-
-
-
-amb_ts_plot<-amb_dta_plot %>%
-  # filter(metric=="c1_mean") %>%
-  mutate(date=yearmonth(date))
 # 
 # amb_ts_plot= as_tsibble(amb_ts_plot,
 #                         index= date,
@@ -53,21 +46,123 @@ amb_ts_plot<-amb_dta_plot %>%
 #                         validate=FALSE)
 
 
-
-try %>%
+##C1 response times 
+amb_dta_plot %>%
   filter(str_detect(metric, 'c1_')) %>%
-  ggplot(.,aes(x=date2, y=resp_time2, group=region, colour=region))+
-  geom_line(linetype='dashed')+
-  geom_point(size=1)+
-  annotate("segment", x = min(try$date2), xend = max(try$date2), 
-           y =00:07:00, yend = 00:07:00, alpha = .1,fill = "grey20")+
+  mutate(met_lab=ifelse(metric=="c1_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
   theme_THF()+
-  facet_grid(rows=vars(metric))+
+  facet_grid(cols=vars(region))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
   theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
         axis.text.x=element_text(size=14),
         axis.text.y=element_text(size=11),
         plot.caption = element_markdown(hjust=0, size=9),
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+##C1T response times (not working)
+amb_dta_plot %>%
+  filter(str_detect(metric, 'c1T_')) %>%
+  mutate(met_lab=ifelse(metric=="c1T_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  theme_THF()+
+  facet_grid(cols=vars(region))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+##C2 response times 
+amb_dta_plot %>%
+  filter(str_detect(metric, 'c2_')) %>%
+  mutate(met_lab=ifelse(metric=="c2_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  geom_hline(yintercept = as_hms("00:18:00"), colour = '#524c48', linetype='dashed' )+
+  geom_hline(yintercept = as_hms("00:40:00"), colour = '#524c48', linetype='dashed')+
+  theme_THF()+
+  facet_grid(cols=vars(region))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+##C3 
+amb_dta_plot %>%
+  filter(str_detect(metric, 'c3_')) %>%
+  mutate(met_lab=ifelse(metric=="c3_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  geom_hline(yintercept = as_hms("01:00:00"), colour = '#524c48', linetype='dashed' )+
+  geom_hline(yintercept = as_hms("02:00:00"), colour = '#524c48', linetype='dashed')+
+  theme_THF()+
+  facet_grid(cols=vars(region))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+##C4
+amb_dta_plot %>%
+  filter(str_detect(metric, 'c4_')) %>%
+  mutate(met_lab=ifelse(metric=="c4_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  theme_THF()+
+  facet_grid(cols=vars(region))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+# scale_y_continuous(breaks = as_hms(seq(0, 1500, by = 300)))
 
