@@ -5,12 +5,12 @@ library(tidyverse)
 library(rio)
 library(lubridate)
 library(ggplot2)
-library(tsibble)
-library(feasts)
 library(hms)
 library(tidyverse)
-library(ggtext)
 library(THFstyle)
+
+
+# Regions -----------------------------------------------------------------
 
 
 
@@ -20,7 +20,7 @@ buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance
 
 
 amb_dta<-s3read_using(read.csv # Which function are we using to read
-                   , object = 'amb_RT_clean.csv' # File to open
+                   , object = 'amb_RT_regions.csv' # File to open
                    , bucket = buck) # Bucket name defined above
 
 #reformat for plots
@@ -178,13 +178,74 @@ c4<-amb_dta_plot %>%
         plot.caption = element_markdown(hjust=0, size=9),
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
+        legend.box.margin=margin(-10,-10,-10,-10),
+        strip.text.x = element_text(size = 6))
 
 ggplotly(c4) %>% 
   layout(legend = list(orientation = 'h')) %>% 
-  layout(legend=list(title=list(text='')))
+  layout(legend=list(title=list(text=''))) 
+  
 
 
 
 # scale_y_continuous(breaks = as_hms(seq(0, 1500, by = 300)))
 
+
+# Trusts ------------------------------------------------------------------
+
+#Data load
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+amb_dta_trusts<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'amb_RT_trusts.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+
+
+amb_dta_plot<-amb_dta_trusts %>% 
+  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time') %>% 
+  filter(org_name != "WEST MIDLANDS AMBULANCE SERVICE NHS FOUNDATION TRUST")
+
+
+long_names<-c("England", "EAST MIDLANDS AMBULANCE SERVICE NHS TRUST", "EAST OF ENGLAND AMBULANCE SERVICE NHS TRUST" ,"ISLE OF WIGHT NHS TRUST",                                        
+              "LONDON AMBULANCE SERVICE NHS TRUST", "NORTH EAST AMBULANCE SERVICE NHS FOUNDATION TRUST", "NORTH WEST AMBULANCE SERVICE NHS TRUST",                         
+              "SOUTH CENTRAL AMBULANCE SERVICE NHS FOUNDATION TRUST", "SOUTH EAST COAST AMBULANCE SERVICE NHS FOUNDATION TRUST", "SOUTH WESTERN AMBULANCE SERVICE NHS FOUNDATION TRUST",
+              "WEST MIDLANDS AMBULANCE SERVICE UNIVERSITY NHS FOUNDATION TRUST", "YORKSHIRE AMBULANCE SERVICE NHS TRUST") 
+
+
+label_names<-c("England", "East Midlands", "East of England" ,"Isle of Wight",                                        
+               "London", "North East", "North West",                         
+               "South Central", "South East Coast", "South Western",
+               "West Midlands", "Yorkshire") 
+
+
+amb_dta_plot<-amb_dta_plot %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  mutate(resp_time2=as_hms(resp_time2)) %>% 
+  mutate(date2=yearmonth(date)) %>%
+  mutate(org_lab=factor(org_name, levels=long_names, labels=label_names))
+
+
+amb_dta_plot %>%
+  filter(str_detect(metric, 'c1_')) %>%
+  mutate(met_lab=ifelse(metric=="c1_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
