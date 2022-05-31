@@ -52,7 +52,7 @@ amb_dta_trusts<-amb_dta_clean %>%
 
 
 
-s3write_using(amb_dta_regions # What R object we are saving
+s3write_using(amb_dta_trusts # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'amb_RT_trusts.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
