@@ -31,7 +31,7 @@ This document is for scoping purposes and is not intended for use outside of the
 Data obtained from [NHS England, Ambulance Quality Indicators](https://www.england.NHS.uk/statistics/statistical-work-areas/ambulance-quality-indicators/ambulance-quality-indicators-data-2021-22/)\
 
 
-## Ambulance Response Times by Category and Region {.tabset}
+## By Region for each Cateogory {.tabset}
 
 Response times by regions and category of incidents. There are 7 regions:
 
@@ -308,9 +308,110 @@ ggplotly(c4) %>%
 * Across the different categories, you can see the knock on effect of categories 1 and 2 categories- those reporting longer responses times for these categories tend to report even longer response times for category 3 and 4. 
 * There were some regions reaching the target response times for category 2-4 but there is a clear upward trend across the service which means that almost all regions were missing targets in recent months 
 
+## By Category for each Region {.tabset}
+
+```{r setup_regions, echo=FALSE}
+
+org_list<-unique(amb_dta_plot$org_name)
+
+```
 
 
-## Ambulance Response Times by Category and Trust {.tabset}
+```{r graphs_function, echo=FALSE}
+
+trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
+  aaa <- ggplot2::enquo(var.x)
+  # bbb <- ggplot2::enquo(var.y)
+  plot <-  data %>%
+    filter(org_lab==!!aaa) %>%
+      mutate(met_group=substr(metric,0,3)) %>% 
+  mutate(met_cat=ifelse(str_detect(metric,'mean'),'Mean','90th centile')) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
+                        ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_group, colour=met_group))+
+  geom_line(aes(linetype=met_cat))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+    labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+    ggtitle(var.x)+
+    theme(legend.text=element_text(size=11),
+          legend.title = element_blank(),
+          axis.text.x=element_text(size=8, angle=60), 
+          axis.text.y=element_text(size=11),
+          plot.caption = element_markdown(hjust=0, size=9),
+          plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+          legend.margin=margin(0,0,0,0),
+          legend.box.margin=margin(-10,-10,-10,-10))
+
+  ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+}
+
+
+```
+
+
+### England
+
+```{r}
+trends_graph(var.x=org_list[1])
+
+```
+
+### North East and Yorkshire
+
+```{r}
+trends_graph(var.x=org_list[2])
+
+```
+
+### North West
+
+```{r}
+trends_graph(var.x=org_list[3])
+
+```
+
+### Midlands 
+
+```{r}
+trends_graph(var.x=org_list[4])
+
+```
+
+### East of England
+```{r}
+trends_graph(var.x=org_list[5])
+
+```
+
+### London
+```{r}
+trends_graph(var.x=org_list[6])
+
+```
+
+### South East
+```{r}
+trends_graph(var.x=org_list[7])
+
+```
+
+### South West
+```{r}
+trends_graph(var.x=org_list[8])
+
+```
+
+## By Trust for each Category {.tabset}
 
 Response times by Trusts and category of incidents. There are 11 NHS trusts: 
 
@@ -610,133 +711,77 @@ ggplotly(c4) %>%
 * But we are still seeing some trusts performing well on C1 targets but not necessarily the best performers on C2-C4 targets
 * South Western is reporting the longest response times across all incidents and worth exploring furher what is going on 
 
-## Ambulance Response Times by Regions {.tabset}
 
-```{r load_regions, echo=FALSE}
-buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
-
-
-amb_dta<-s3read_using(read.csv # Which function are we using to read
-                   , object = 'amb_RT_clean.csv' # File to open
-                   , bucket = buck) # Bucket name defined above
-
-amb_dta_plot<-amb_dta %>% 
- pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
-
-amb_dta_plot<-amb_dta_plot %>% 
-  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
-  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
-  mutate(resp_time2=as_hms(resp_time2)) %>% 
-  mutate(date2=yearmonth(date)) %>% 
-  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
-                                              "Midlands","East of England","London","South East","South West")))
-
-
-org_list<-unique(amb_dta_plot$org_name)
-
-
-m <- list(
-  l = 50,
-  r = 50,
-  b = 100,
-  t = 100,
-  pad = 0
-)
-
-
-
-```
-
-
-```{r graphs_function, echo=FALSE}
-
-trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
-  aaa <- ggplot2::enquo(var.x)
-  # bbb <- ggplot2::enquo(var.y)
-  plot <-  data %>%
-    filter(org_lab==!!aaa) %>%
-    mutate(met_group=substr(metric,0,3)) %>% 
-    mutate(met_lab=ifelse(str_detect(metric, 'mean'), "Mean (hours:min:sec)"
-                          ,"90th centile (min:sec)")) %>% 
-    ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
-    geom_line(linetype='solid')+
-    # geom_point(size=0.25)+
-    # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
-    # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-    scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-    theme_THF()+
-    facet_grid(cols=vars(met_group))+
-    scale_colour_THF()+
-    labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
-    ggtitle(var.x)+
-    theme(legend.text=element_text(size=11),
-          legend.title = element_blank(),
-          axis.text.x=element_text(size=8, angle=60), 
-          axis.text.y=element_text(size=11),
-          plot.caption = element_markdown(hjust=0, size=9),
-          plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-          legend.margin=margin(0,0,0,0),
-          legend.box.margin=margin(-10,-10,-10,-10))
-
-  ggplotly(plot) %>% 
-  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
-  layout(legend=list(title=list(text=''))) %>% 
-  layout(autosize = F, width = 1200, height = 500, margin = m)
-}
-
-
-```
-
+## By Category for each Trust {.tabset}
 
 ### England
-
-```{r}
-trends_graph(var.x=org_list[1])
-
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[1])
 ```
 
-### North East and Yorkshire
 
-```{r}
-trends_graph(var.x=org_list[2])
-
+### East Midlands
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[2])
 ```
 
-### North West
-
-```{r}
-trends_graph(var.x=org_list[3])
-
-```
-
-### Midlands 
-
-```{r}
-trends_graph(var.x=org_list[4])
-
-```
 
 ### East of England
-```{r}
-trends_graph(var.x=org_list[5])
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[3])
+```
 
+### Isle of Wight
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[4])
 ```
 
 ### London
-```{r}
-trends_graph(var.x=org_list[6])
-
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[5])
 ```
 
-### South East
-```{r}
-trends_graph(var.x=org_list[7])
-
+### North East
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[6])
 ```
 
-### South West
-```{r}
-trends_graph(var.x=org_list[8])
 
+### North West
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[7])
 ```
+
+
+### South Central
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[8])
+```
+
+
+### South East Coast
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[9])
+```
+
+
+### South Western
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[10])
+```
+
+
+### West Midlands
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[11])
+```
+
+
+
+### Yorkshire
+
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[12])
+```
+
 
