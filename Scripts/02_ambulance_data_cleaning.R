@@ -56,3 +56,35 @@ s3write_using(amb_dta_trusts # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'amb_RT_trusts.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
+
+
+# Incidents ---------------------------------------------------------------
+
+#select relevant columns 
+amb_dta_clean<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(7:12)))
+
+#by trust 
+list_org_codes_trust<-c("RX9", "RYC", "R1F", "RRU", "RX6", "RX7", "RYE", "RYD", "RYF", "RYA", "RX8") 
+#some data is no complete
+
+#by region
+list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
+
+
+names(amb_dta_clean)[6:11]<-c("all_incidents", "c1", "c1t", "c2", "c3", "c4")
+
+amb_incidents<-amb_dta_clean %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
+
+#save incidents data 
+#### save R objects from the environment directly to your s3 bucket
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
+
+s3write_using(amb_incidents # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amb_incidents.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
