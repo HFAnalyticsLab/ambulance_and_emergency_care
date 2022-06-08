@@ -6,7 +6,7 @@ library(here)
 library(aws.s3)
 library(janitor)
 
-
+rm(list=ls())
 
 #load data 
 amb_dta<-read_csv(here::here('data', "ambsys.csv"))
@@ -63,7 +63,7 @@ s3write_using(amb_dta_trusts # What R object we are saving
 #select relevant columns 
 amb_dta_clean<-amb_dta %>% 
   clean_names() %>% 
-  select(year:org_name, paste0("a",c(7:12)))
+  select(year:org_name, paste0("a",c(7:12, 17, 53:55)))
 
 #by trust 
 list_org_codes_trust<-c("RX9", "RYC", "R1F", "RRU", "RX6", "RX7", "RYE", "RYD", "RYF", "RYA", "RX8") 
@@ -74,6 +74,7 @@ list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
 
 
 names(amb_dta_clean)[6:11]<-c("all_incidents", "c1", "c1t", "c2", "c3", "c4")
+names(amb_dta_clean)[12:15]<-c("hear_treat", "see_treat", "convey_elsewhere", "convey_ED")
 
 amb_incidents<-amb_dta_clean %>% 
   mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
