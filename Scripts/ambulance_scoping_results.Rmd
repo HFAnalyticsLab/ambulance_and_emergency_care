@@ -1,5 +1,5 @@
 ---
-title: "Ambulance Response Times"
+title: "Ambulance Quality Indicators"
 output:
    html_document:
     toc: true
@@ -26,11 +26,13 @@ library(tsibble)
 
 ```
 
+
 This document is for scoping purposes and is not intended for use outside of the Data Analaytics team.\
 Data obtained from [NHS England, Ambulance Quality Indicators](https://www.england.NHS.uk/statistics/statistical-work-areas/ambulance-quality-indicators/ambulance-quality-indicators-data-2021-22/)\
 
+# Ambulance Reponse Times 
 
-## Ambulance Response Times by Region {.tabset}
+## By Region for each Cateogory {.tabset}
 
 Response times by regions and category of incidents. There are 7 regions:
 
@@ -307,9 +309,110 @@ ggplotly(c4) %>%
 * Across the different categories, you can see the knock on effect of categories 1 and 2 categories- those reporting longer responses times for these categories tend to report even longer response times for category 3 and 4. 
 * There were some regions reaching the target response times for category 2-4 but there is a clear upward trend across the service which means that almost all regions were missing targets in recent months 
 
+## By Category for each Region {.tabset}
+
+```{r setup_regions, echo=FALSE}
+
+org_list<-unique(amb_dta_plot$org_name)
+
+```
 
 
-## Ambulance Response Times by Trust {.tabset}
+```{r graphs_function, echo=FALSE}
+
+trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
+  aaa <- ggplot2::enquo(var.x)
+  # bbb <- ggplot2::enquo(var.y)
+  plot <-  data %>%
+    filter(org_lab==!!aaa) %>%
+      mutate(met_group=substr(metric,0,3)) %>% 
+  mutate(met_cat=ifelse(str_detect(metric,'mean'),'Mean','90th centile')) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
+                        ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_group, colour=met_group))+
+  geom_line(aes(linetype=met_cat))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+    labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+    ggtitle(var.x)+
+    theme(legend.text=element_text(size=11),
+          legend.title = element_blank(),
+          axis.text.x=element_text(size=8, angle=60), 
+          axis.text.y=element_text(size=11),
+          plot.caption = element_markdown(hjust=0, size=9),
+          plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+          legend.margin=margin(0,0,0,0),
+          legend.box.margin=margin(-10,-10,-10,-10))
+
+  ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+}
+
+
+```
+
+
+### England
+
+```{r}
+trends_graph(var.x=org_list[1])
+
+```
+
+### North East and Yorkshire
+
+```{r}
+trends_graph(var.x=org_list[2])
+
+```
+
+### North West
+
+```{r}
+trends_graph(var.x=org_list[3])
+
+```
+
+### Midlands 
+
+```{r}
+trends_graph(var.x=org_list[4])
+
+```
+
+### East of England
+```{r}
+trends_graph(var.x=org_list[5])
+
+```
+
+### London
+```{r}
+trends_graph(var.x=org_list[6])
+
+```
+
+### South East
+```{r}
+trends_graph(var.x=org_list[7])
+
+```
+
+### South West
+```{r}
+trends_graph(var.x=org_list[8])
+
+```
+
+## By Trust for each Category {.tabset}
 
 Response times by Trusts and category of incidents. There are 11 NHS trusts: 
 
@@ -608,4 +711,475 @@ ggplotly(c4) %>%
 * It's interesting that the Isle of Wight is not performing as badly on C2, C3 and C4 incidents than they are on C1 incidents. So knock on effects are less clear here 
 * But we are still seeing some trusts performing well on C1 targets but not necessarily the best performers on C2-C4 targets
 * South Western is reporting the longest response times across all incidents and worth exploring furher what is going on 
+
+
+## By Category for each Trust {.tabset}
+
+
+### England
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[1])
+```
+
+
+### East Midlands
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[2])
+```
+
+
+### East of England
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[3])
+```
+
+### Isle of Wight
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[4])
+```
+
+### London
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[5])
+```
+
+### North East
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[6])
+```
+
+
+### North West
+```{r, echol=FALSE}
+trends_graph(var.x=label_names[7])
+```
+
+
+### South Central
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[8])
+```
+
+
+### South East Coast
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[9])
+```
+
+
+### South Western
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[10])
+```
+
+
+### West Midlands
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[11])
+```
+
+
+
+### Yorkshire
+
+```{r, echo=FALSE}
+trends_graph(var.x=label_names[12])
+```
+
+# Incidents
+
+```{r, echo=FALSE}
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+amb_incidents<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'amb_incidents.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+
+list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
+
+
+
+amb_dta_regions<-amb_incidents %>% 
+  filter(org_code %in% c(list_org_codes_region, "Eng")) %>%
+  select(c(year:c4, date)) %>% 
+  pivot_longer(c(all_incidents:c4), names_to = 'metric', values_to = 'incidents')
+
+
+amb_dta_regions<-amb_dta_regions %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West")))
+
+
+
+list_org_codes_trust<-c("RX9", "RYC", "R1F", "RRU", "RX6", "RX7", "RYE", "RYD", "RYF", "RYA", "RX8") 
+
+amb_dta_incidents_trust<-amb_incidents %>% 
+  filter(org_code %in% c(list_org_codes_trust, "Eng")) %>% 
+  select(c(year:c4, date)) %>% 
+  pivot_longer(c(all_incidents:c4), names_to = 'metric', values_to = 'incidents')
+
+amb_dta_incidents_trust<-amb_dta_incidents_trust %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(incidents=as.numeric(incidents)) %>% 
+  filter(org_name != "WEST MIDLANDS AMBULANCE SERVICE NHS FOUNDATION TRUST")
+
+
+long_names<-c("England", "EAST MIDLANDS AMBULANCE SERVICE NHS TRUST", "EAST OF ENGLAND AMBULANCE SERVICE NHS TRUST" ,"ISLE OF WIGHT NHS TRUST",                                        
+              "LONDON AMBULANCE SERVICE NHS TRUST", "NORTH EAST AMBULANCE SERVICE NHS FOUNDATION TRUST", "NORTH WEST AMBULANCE SERVICE NHS TRUST",                         
+              "SOUTH CENTRAL AMBULANCE SERVICE NHS FOUNDATION TRUST", "SOUTH EAST COAST AMBULANCE SERVICE NHS FOUNDATION TRUST", "SOUTH WESTERN AMBULANCE SERVICE NHS FOUNDATION TRUST",
+              "WEST MIDLANDS AMBULANCE SERVICE UNIVERSITY NHS FOUNDATION TRUST", "YORKSHIRE AMBULANCE SERVICE NHS TRUST") 
+
+
+label_names<-c("England", "East Midlands", "East of England" ,"Isle of Wight",                                        
+               "London", "North East", "North West",                         
+               "South Central", "South East Coast", "South Western",
+               "West Midlands", "Yorkshire") 
+
+amb_dta_incidents_trust<-amb_dta_incidents_trust %>% 
+  mutate(org_lab=factor(org_name, levels=long_names, labels=label_names)) 
+
+
+
+
+
+
+```
+
+
+
+## All incidents  {.tabset}
+
+### England 
+
+```{r, echo=FALSE}
+
+
+
+plot<-amb_dta_regions %>%
+  filter(org_code=="Eng"& metric=="all_incidents")%>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  # scale_y_continuous(labels = comma) +
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+### Regions 
+```{r, echo=FALSE}
+
+plot<-amb_dta_regions %>%
+  filter(org_code != "Eng" & metric == "all_incidents") %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+```
+
+### Trusts
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_incidents_trust %>%
+  filter(org_code != "Eng" & metric == "all_incidents") %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        strip.text.x = element_text(size = 6))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+
+## Category  {.tabset}
+
+### England 
+
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_regions %>%
+  filter(org_code == "Eng"& metric != "all_incidents" ) %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+
+### Regions
+
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_regions %>%
+  filter(org_code != "Eng" & metric != "all_incidents") %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+```
+
+### Trusts
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_incidents_trust %>%
+  filter(org_code != "Eng" & metric != "all_incidents") %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        strip.text.x = element_text(size = 6))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+## Outcomes {.tabset}
+
+```{r, echo=FALSE}
+
+amb_dta_regions_out<-amb_incidents %>% 
+  filter(org_code %in% c(list_org_codes_region, "Eng")) %>% 
+  select(c(year:all_incidents,hear_treat:date)) %>% 
+  pivot_longer(c(all_incidents:see_treat), names_to = 'metric', values_to = 'incidents')
+
+amb_dta_regions_out<-amb_dta_regions_out %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(incidents=as.numeric(incidents)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West")))
+
+amb_dta_trusts_out<-amb_incidents %>% 
+  filter(org_code %in% c(list_org_codes_trust, "Eng")) %>% 
+  select(c(year:all_incidents,hear_treat:date)) %>% 
+  pivot_longer(c(all_incidents:see_treat), names_to = 'metric', values_to = 'incidents')
+
+amb_dta_trusts_out<-amb_dta_trusts_out %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(incidents=as.numeric(incidents)) %>% 
+  filter(org_name != "WEST MIDLANDS AMBULANCE SERVICE NHS FOUNDATION TRUST") %>% 
+  mutate(org_lab=factor(org_name, levels=long_names, labels=label_names)) 
+
+
+```
+
+### England
+
+```{r, echo=FALSE}
+plot<-amb_dta_regions_out %>%
+  filter(org_code=="Eng"& metric!="all_incidents")%>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  # scale_y_continuous(labels = comma) +
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+```
+
+### Regions
+
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_regions_out %>%
+  filter(org_code!="Eng"& metric!="all_incidents")%>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  # scale_y_continuous(labels = comma) +
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+```
+ 
+
+
+### Trusts
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_trusts_out %>%
+  filter(org_code!="Eng"& metric!="all_incidents")%>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  # scale_y_continuous(labels = comma) +
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        strip.text.x = element_text(size = 6))
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+
+```
 

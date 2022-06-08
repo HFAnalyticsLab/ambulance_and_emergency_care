@@ -6,7 +6,7 @@ library(here)
 library(aws.s3)
 library(janitor)
 
-
+rm(list=ls())
 
 #load data 
 amb_dta<-read_csv(here::here('data', "ambsys.csv"))
@@ -56,3 +56,29 @@ s3write_using(amb_dta_trusts # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'amb_RT_trusts.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
+
+
+# Incidents ---------------------------------------------------------------
+
+#select relevant columns 
+amb_dta_clean<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(7:12, 17, 53:55)))
+
+
+names(amb_dta_clean)[6:11]<-c("all_incidents", "c1", "c1t", "c2", "c3", "c4")
+names(amb_dta_clean)[12:15]<-c("hear_treat", "convey_ED", "convey_elsewhere", "see_treat" )
+
+amb_incidents<-amb_dta_clean %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
+
+#save incidents data 
+#### save R objects from the environment directly to your s3 bucket
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
+
+s3write_using(amb_incidents # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amb_incidents.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
