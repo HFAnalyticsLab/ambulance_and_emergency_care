@@ -232,6 +232,7 @@ amb_dta_plot %>%
   # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
   # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  scale_y_time(limits = as_hms(c(0,72000)), breaks = as_hms(seq(0, 72000, by = 3600)))+
   theme_THF()+
   facet_grid(cols=vars(met_group))+
   scale_colour_THF()+
@@ -260,6 +261,8 @@ amb_dta_plot %>%
   # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
   # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  # scale_y_time(limits = as_hms(c(0,72000)), breaks = as_hms(seq(0, 72000, by = 7200)))+
+  scale_y_time(breaks = as_hms(seq(0, 72000, by = 1800)))+
   theme_THF()+
   facet_grid(cols=vars(met_cat))+
   scale_colour_THF()+
@@ -272,6 +275,9 @@ amb_dta_plot %>%
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
 
 trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   aaa <- ggplot2::enquo(var.x)
