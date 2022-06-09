@@ -199,10 +199,10 @@ amb_dta_regions %>%
 
 amb_dta_regions %>%
   filter(org_code!="Eng" & metric!="all_incidents")%>% 
-  ggplot(.,aes(x=date2, y=as.numeric(incidents)))+
-  # geom_line(linetype='solid')+
-  # # geom_point(size=0.25)+
-  geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
   facet_grid(cols=vars(org_lab))+
