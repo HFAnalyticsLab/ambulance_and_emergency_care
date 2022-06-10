@@ -1,6 +1,23 @@
+---
+title: "Attendances at A&E and admissions from A&E April 2018 to March 2022 "
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 library(aws.s3)
 library(tidyverse)
 library(ggplot2)
+
+```
+
+This document is for scoping purposes and is not intended for use outside of the Data Analaytics team.\
+Data obtained from NHS England A&E attenaces and emergency admissions https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/ 
+
+Attendances at A&E and admissions from A&E overall and by Type for each Region
+
+```{r derive, echo=FALSE}
+# Clean data 
 
 aeattend <- readRDS("aeattend.rds")
 
@@ -18,30 +35,50 @@ summattend <- aeattend %>%
   drop_na(`Number of A&E attendances Type 2`) %>%
   drop_na(`Number of A&E attendances Other A&E Department`) %>%
   group_by(`NHS England Region`, time) %>%
-  summarise(meanattend=mean(totalattend), meantype1=mean(`Number of A&E attendances Type 1`),
+  summarise(meanattend=mean(totalattend), meanadmit=mean(totaladmit), meantype1=mean(`Number of A&E attendances Type 1`),
             meantype2=mean(`Number of A&E attendances Type 2`), meantypeoth=mean(`Number of A&E attendances Other A&E Department`), n=n())
 
-## figure of attendances
+```
+
+## A&E attendances
+
+Type 1 A&E department = Increasingly referred to as an Emergency Department. A consultant led 24-hour service with full resuscitation facilities and designated accommodation for the reception of accident and emergency patients.  
+
+Type 2 A&E department = A consultant led single specialty accident and emergency service or Emergency Department (e.g. ophthalmology, dental) with designated accommodation for the reception of patients. 
+
+Type 3 A&E department. These are now Urgent Treatment Centres (UTCs). These are GP-led, open at least 12 hours a day, every day, offer appointments that can be booked through 111 or through a GP referral, and are equipped to diagnose and deal with many of the most common ailments people attend A&E for.  
+
+```{r plotattend, echo=FALSE}
+## figure of attendances and admissions
 ggplot(data=summattend, aes(x=time, y=meanattend, group=`NHS England Region`)) +
   geom_line(aes(linetype=`NHS England Region`, colour=`NHS England Region`)) +
   ylab("Number of A&E attendances") +
-  ggtitle("Apr2018-Mar21") + 
+  ggtitle("Apr2018-Mar2022") + 
   theme(axis.text.x=element_text(angle=90, hjust=1))
 ggplot(data=summattend, aes(x=time, y=meantype1, group=`NHS England Region`)) +
   geom_line(aes(linetype=`NHS England Region`, colour=`NHS England Region`)) +
   ylab("Number of type 1 attendances") +
-  ggtitle("Apr2018-Mar21") + 
+  ggtitle("Apr2018-Mar2022") + 
   theme(axis.text.x=element_text(angle=90, hjust=1))
 ggplot(data=summattend, aes(x=time, y=meantype2, group=`NHS England Region`)) +
   geom_line(aes(linetype=`NHS England Region`, colour=`NHS England Region`)) +
   ylab("Number of type 2 attendances") +
-  ggtitle("Apr2018-Mar21") + 
+  ggtitle("Apr2018-Mar2022") + 
   theme(axis.text.x=element_text(angle=90, hjust=1))
 ggplot(data=summattend, aes(x=time, y=meantypeoth, group=`NHS England Region`)) +
   geom_line(aes(linetype=`NHS England Region`, colour=`NHS England Region`)) +
   ylab("Number of other attendances") +
-  ggtitle("Apr2018-Mar21") + 
+  ggtitle("Apr2018-Mar22") + 
   theme(axis.text.x=element_text(angle=90, hjust=1))
+
+
+```
+
+
+## waiting times in A&E
+
+
+```{r plotwaittime, echo=FALSE}
 
 summattend <- aeattend %>%
   drop_na(pct4plushrswaittype1) %>%
@@ -62,6 +99,14 @@ ggplot(data=summattend, aes(x=time, y=mean4pluswaittype2, group=`NHS England Reg
   ggtitle("Apr2018-Mar2022") + 
   theme(axis.text.x=element_text(angle=90, hjust=1))
 
+
+```
+
+
+## Admissions from A&E
+
+
+```{r plotadmit, echo=FALSE}
 
 summattend <- aeattend %>%
   drop_na(totaladmit) %>%
@@ -90,9 +135,4 @@ ggplot(data=summattend, aes(x=time, y=mean12plusadmit, group=`NHS England Region
   theme(axis.text.x=element_text(angle=90, hjust=1))
 
 
-## Two lines per graph
-ggplot(data=summattend, aes(x=time, group=`NHS England Region`)) +
-  geom_line(aes(y=meanattend, colour=`NHS England Region`)) +
-  geom_line(aes(y=meanadmit, colour=`NHS England Region`)) 
-
-
+```
