@@ -336,6 +336,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
   # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  # scale_y_time(breaks = as_hms(seq(0, 72000, by = 1800)))+
   theme_THF()+
   facet_grid(cols=vars(met_cat))+
   scale_colour_THF()+
@@ -358,6 +359,12 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
 
 
 ```
+
+**Overview:**
+
+* It's harder to see delays in c1 from these graphs
+* Based on this, it looks like c2 trends are more similar to c3 and c4, and a delay in c2 often means a delay in c3 and then a delay in c4 (with some exceptions). c3 and c4 response times are very similar.  
+* In East Midlands and North East c4 response times are sometimes better than c3 response times. 
 
 
 ### England
@@ -715,6 +722,12 @@ ggplotly(c4) %>%
 
 ## By Category for each Trust {.tabset}
 
+**Overview:**
+
+* It's harder to see delays in c1 from these graphs
+* Based on this, it looks like c2 trends are more similar to c3 and c4, and a delay in c2 often means a delay in c3 and then a delay in c4 (with some exceptions). c3 and c4 response times are very similar.  
+* In East Midlands and North East c4 response times are sometimes better than c3 response times. 
+
 
 ### England
 ```{r, echo=FALSE}
@@ -851,6 +864,14 @@ amb_dta_incidents_trust<-amb_dta_incidents_trust %>%
 
 ## All incidents  {.tabset}
 
+**Overview:**
+
+* Fluctuating counts of incidents but doesn't seem to be an uptick to explain the uptick in response times
+* By regions, Midlands is reporting the highest counts and East of England and South West reporting the lowest (this is interesting as South West was reporting longest response times in recent months)  
+* By trusts, London is reporting the highest incident counts and Isle of Wight is reporting the lowest followed by North East. 
+* This is not split by category so that might influence this. 
+
+
 ### England 
 
 ```{r, echo=FALSE}
@@ -953,6 +974,15 @@ ggplotly(plot) %>%
 
 ## Category  {.tabset}
 
+**Overview** 
+
+* C2 incidents make up the most incidents overall, followed by c3, c1 and then c4.  
+* Seems to be an overall downward trend of c3 incidents in recent month, whereas a slight upward trend in c1 incidents 
+* Upward trends of c1 incidents in South West, Midlands and North West.
+* More overlaps in incidents over time between c1, c3-4 for specific trusts
+* Upward trend of c1 incidents in East of England, North West, South Western and West Midlands. 
+
+
 ### England 
 
 
@@ -1052,7 +1082,9 @@ ggplotly(plot) %>%
 
 ```
 
-## Outcomes {.tabset}
+## Type of incidents {.tabset}
+
+
 
 ```{r, echo=FALSE}
 
@@ -1081,15 +1113,24 @@ amb_dta_trusts_out<-amb_dta_trusts_out %>%
 
 ```
 
+**Overview** 
+
+* Overall majority of incidents results in transport to ED followed by see and treat. This is the same across all regions and trusts
+* Downward trend in convey to ED incidents in recent months across regions and trusts
+* But upward trend in hear and treat incidents overall
+* In North East and Yorkshire, North West and London, there is a slight upward trend of see and treat incidents 
+* In East Midlands, London, North West, Isle of Wight and Yorkshire NHS trust,there is a slight upward trend of see and treat incidents. 
+
+
 ### England
 
 ```{r, echo=FALSE}
 plot<-amb_dta_regions_out %>%
   filter(org_code=="Eng"& metric!="all_incidents")%>% 
-  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+   ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
   # geom_point(size=0.25)+
-  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
   scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
   # scale_y_continuous(labels = comma) +
   theme_THF()+
@@ -1121,8 +1162,8 @@ plot<-amb_dta_regions_out %>%
   ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
   # geom_point(size=0.25)+
-  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
-  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   # scale_y_continuous(labels = comma) +
   theme_THF()+
   facet_grid(cols=vars(org_lab))+
@@ -1152,11 +1193,11 @@ ggplotly(plot) %>%
 
 plot<-amb_dta_trusts_out %>%
   filter(org_code!="Eng"& metric!="all_incidents")%>% 
-  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  ggplot(.,aes(x=date2, y=as.numeric(incidents),group=metric, colour=metric))+
   geom_line(linetype='solid')+
   # geom_point(size=0.25)+
-  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
-  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   # scale_y_continuous(labels = comma) +
   theme_THF()+
   facet_grid(cols=vars(org_lab))+
