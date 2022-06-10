@@ -5,12 +5,13 @@ library(ggplot2)
 aeattend <- readRDS("aeattend.rds")
 
 aeattend <- aeattend %>%
-  mutate(time=paste0(year, formatC(month, width=2, flag="0")))
-
+  mutate(time=paste0(year, formatC(month, width=2, flag="0"))) %>%
+  mutate(pct4to12hrsadmit=ifelse(totaladmit==0, 0, pct4to12hrsadmit )) %>%
+  mutate(pct12plushrsadmit=ifelse(totaladmit==0, 0, pct12plushrsadmit )) 
 
 displaysummattend <- aeattend %>%
   group_by(`NHS England Region`, year, month) %>%
-  summarise(meanattend=mean(totalattend), meanadmit=mean(totaladmit), n=n()) ## why is March 2019 data missing?
+  summarise(meanattend=mean(totalattend), meanadmit=mean(totaladmit),meantype2=mean(`Number of A&E attendances Type 2`), n=n()) 
 
 summattend <- aeattend %>%
   drop_na(totalattend) %>%
@@ -87,12 +88,65 @@ ggplot(data=summattend, aes(x=time, y=mean12plusadmit, group=`NHS England Region
   geom_line(aes(linetype=`NHS England Region`, colour=`NHS England Region`)) +
   ylab("% waiting 12+ hrs to be admitted from A&E") +
   ggtitle("Apr2018-Mar2022") + 
-  theme(axis.text.x=element_text(angle=90, hjust=1))
+  theme(axis.text.x=element_text(angle=90, hjust=1)) + 
+  ylim(0,20)
 
 
-## Two lines per graph
-ggplot(data=summattend, aes(x=time, group=`NHS England Region`)) +
-  geom_line(aes(y=meanattend, colour=`NHS England Region`)) +
-  geom_line(aes(y=meanadmit, colour=`NHS England Region`)) 
+
+## All England
+summattend <- aeattend %>%
+  drop_na(totalattend) %>%
+  drop_na(`Number of A&E attendances Type 1`) %>%
+  group_by(time) %>%
+  summarise(meanattend=mean(totalattend), meantype1=mean(`Number of A&E attendances Type 1`),
+            meantype2=mean(`Number of A&E attendances Type 2`), meantypeoth=mean(`Number of A&E attendances Other A&E Department`), n=n())
+
+ggplot() +
+  geom_line(mapping=aes(x=summattend$time, y=summattend$meanattend), color="blue", group=1) +
+  geom_line(mapping=aes(x=summattend$time, y=summattend$meantype1), color="red", group=1) +
+  ggtitle("Apr2018-Mar21") + 
+  ylab("Number of attendances") +
+  xlab("month and year") +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ggtitle("blue = All A&E types, red=Type 1") 
+  
+summattend <- aeattend %>%
+  drop_na(pct4plushrswaittype1) %>%
+  drop_na(pct4plushrswaittype2) %>%
+  group_by(time) %>%
+  summarise(mean4pluswaittype1=mean(pct4plushrswaittype1),
+            mean4pluswaittype2=mean(pct4plushrswaittype2), n=n())
+
+ggplot() +
+  geom_line(mapping=aes(x=summattend$time, y=summattend$mean4pluswaittype1), color="red", group=1) +
+  geom_line(mapping=aes(x=summattend$time, y=summattend$mean4pluswaittype2), color="black", group=1) +
+  ggtitle("Apr2018-Mar21") + 
+  ylab("% waiting 4+ hours in A&E") +
+  xlab("month and year") +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ggtitle("red = type 1, black=Type 2") 
 
 
+summattend <- aeattend %>%
+  drop_na(totaladmit) %>%
+  drop_na(pct4to12hrsadmit) %>%
+  drop_na(pct12plushrsadmit) %>%
+  group_by(time) %>%
+  summarise(meanadmit=mean(totaladmit), mean412admit=mean(pct4to12hrsadmit), mean12plusadmit=mean(pct12plushrsadmit), n=n())
+
+ggplot() +
+  geom_line(mapping=aes(x=summattend$time, y=summattend$meanadmit), color="blue", group=1) +
+  ggtitle("Apr2018-Mar21") + 
+  ylab("Number admitted from A&E") +
+  xlab("month and year") +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) + 
+  ggtitle("Apr2018-Mar2022")
+
+ggplot() +
+  geom_line(mapping=aes(x=summattend$time, y=summattend$mean412admit), color="red", group=1) +
+  geom_line(mapping=aes(x=summattend$time, y=summattend$mean12plusadmit), color="black", group=1) +
+  ggtitle("Apr2018-Mar21") + 
+  ylab("% delayed in being admitted from A&E") +
+  xlab("month and year") +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ggtitle("red = % waiting 4-12 hrs, black=% waiting 12+ hrs") 
