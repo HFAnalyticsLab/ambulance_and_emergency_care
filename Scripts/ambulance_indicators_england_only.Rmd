@@ -1,0 +1,313 @@
+---
+title: "Ambulance indicators England Only"
+output:
+   html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+library(data.table)
+library(aws.s3)
+library(readr)
+library(tidyverse)
+library(rio)
+library(lubridate)
+library(ggplot2)
+library(ggtext)
+library(hms)
+library(tidyverse)
+library(THFstyle)
+library(plotly)
+library(tsibble)
+
+```
+
+
+This document is for scoping purposes and is not intended for use outside of the Data Analaytics team.\
+Data obtained from [NHS England, Ambulance Quality Indicators](https://www.england.NHS.uk/statistics/statistical-work-areas/ambulance-quality-indicators/ambulance-quality-indicators-data-2021-22/)\
+
+# Ambulance Reponse Times 
+
+## Response Times
+
+```{r load, echo=FALSE}
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+amb_dta<-s3read_using(read.csv # Which function are we using to read
+                   , object = 'amb_RT_clean.csv' # File to open
+                   , bucket = buck) # Bucket name defined above
+
+amb_dta_plot<-amb_dta %>% 
+ pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
+
+amb_dta_plot<-amb_dta_plot %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  mutate(resp_time2=as_hms(resp_time2)) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                              "Midlands","East of England","London","South East","South West")))
+
+
+m <- list(
+  l = 50,
+  r = 50,
+  b = 100,
+  t = 100,
+  pad = 0
+)
+
+
+
+```
+
+```{r setup_regions, echo=FALSE}
+
+org_list<-unique(amb_dta_plot$org_name)
+
+```
+
+
+
+```{r graphs_function, echo=FALSE}
+
+
+
+
+trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
+  aaa <- ggplot2::enquo(var.x)
+  # bbb <- ggplot2::enquo(var.y)
+  plot <-  data %>%
+    filter(org_lab==!!aaa) %>%
+      mutate(met_group=substr(metric,0,3)) %>% 
+  mutate(met_cat=ifelse(str_detect(metric,'mean'),'Mean','90th centile')) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
+                        ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
+  ggplot(.,aes(x=date2, y=resp_time2, group=met_group, colour=met_group))+
+  geom_line(aes(linetype=met_cat))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  # scale_y_time(breaks = as_hms(seq(0, 72000, by = 1800)))+
+  theme_THF()+
+  facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+    labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+    ggtitle(var.x)+
+    theme(legend.text=element_text(size=11),
+          legend.title = element_blank(),
+          axis.text.x=element_text(size=8, angle=60), 
+          axis.text.y=element_text(size=11),
+          plot.caption = element_markdown(hjust=0, size=9),
+          plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+          legend.margin=margin(0,0,0,0),
+          legend.box.margin=margin(-10,-10,-10,-10))
+
+  ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+}
+
+
+```
+
+### England
+
+```{r}
+trends_graph(var.x=org_list[1])
+
+```
+
+# Incidents
+
+```{r, echo=FALSE}
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+amb_incidents<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'amb_incidents.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+
+list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
+
+
+
+amb_dta_regions<-amb_incidents %>% 
+  filter(org_code %in% c(list_org_codes_region, "Eng")) %>%
+  select(c(year:c4, date)) %>% 
+  pivot_longer(c(all_incidents:c4), names_to = 'metric', values_to = 'incidents')
+
+
+amb_dta_regions<-amb_dta_regions %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West")))
+
+```
+
+## All incidents
+
+
+```{r, echo=FALSE}
+
+
+
+plot<-amb_dta_regions %>%
+  filter(org_code=="Eng"& metric=="all_incidents")%>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
+  # scale_y_continuous(labels = comma) +
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+## Category 
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_regions %>%
+  filter(org_code == "Eng"& metric != "all_incidents" ) %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="stack", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  ggtitle("England")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+## Type of incidents
+
+```{r, echo=FALSE}
+
+amb_dta_regions_out<-amb_incidents %>% 
+  filter(org_code %in% c(list_org_codes_region, "Eng")) %>% 
+  select(c(year:all_incidents,hear_treat:date)) %>% 
+  pivot_longer(c(all_incidents:see_treat), names_to = 'metric', values_to = 'incidents')
+
+amb_dta_regions_out<-amb_dta_regions_out %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(incidents=as.numeric(incidents)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West")))
+```
+
+```{r, echo=FALSE}
+plot<-amb_dta_regions_out %>%
+  filter(org_code=="Eng"& metric!="all_incidents")%>% 
+   ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  # scale_y_continuous(labels = comma) +
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  ggtitle("England")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+```
+
+
+# Workforce 
+
+```{r, echo=FALSE}
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+wf_eng<-s3read_using(read.csv # Which function are we using to read
+                            , object = 'workforce_eng.csv' # File to open
+                            , bucket = buck) # Bucket name defined above
+
+
+wf_eng<-wf_eng %>% 
+  mutate(date2=format(as.Date(date), "%Y-%m")) 
+
+
+list_dates<-format(as.Date(seq(ymd('2017-08-31'),ymd('2022-02-08'),by='4 weeks')),"%Y-%m")
+
+
+plot<-wf_eng %>%
+  filter(group=="Ambulance staff" & met=="fte_count") %>% 
+  filter(date2 %in% list_dates) %>% 
+  ggplot(.,aes(x=date, y=val, group=group))+
+  geom_point(colour='#dd0031')+
+  geom_line(linetype='solid', colour='#dd0031')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+```
+
+
