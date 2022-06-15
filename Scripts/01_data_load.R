@@ -28,6 +28,10 @@ destfile <- here::here('data', "eng_workforce.xlsx")
 curl_download(link, destfile = destfile)
 
 
+#NHS workforce turnover data
 
+link<-'https://files.digital.nhs.uk/9D/1F78BA/HCHS%20staff%20in%20NHS%20Trusts%20and%20CCGs%20December%202021%20-%20Turnover%20tables.xlsx'
 
+destfile <- here::here('data', "eng_turnover.xlsx")
+curl_download(link, destfile = destfile)
  
