@@ -2,7 +2,27 @@ library(aws.s3)
 library(tidyverse)
 library(ggplot2)
 
+## national analysis
+England_overnightbeds <- readRDS("England_overnightbeds.rds")
 
+England_overnightbeds <- England_overnightbeds %>%
+  mutate(time=paste0(Year,Period)) %>%
+  mutate(pctoccuptot=as.numeric(Total...14)) %>%
+  mutate(pctoccupgenacute=as.numeric(`General & Acute...15`))
+
+
+ggplot() +
+  geom_line(mapping=aes(x=England_overnightbeds$time, y=England_overnightbeds$pctoccuptot), color="blue", group=1) +
+  geom_line(mapping=aes(x=England_overnightbeds$time, y=England_overnightbeds$pctoccupgenacute), color="red", group=1) +
+  ggtitle("Beds occupied 2010-2021") + 
+  ylab("% occupied") +
+  xlab("Year and quarter") +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  ggtitle("blue = All beds, red=General & Acute beds") +
+  ylim(0.5,1.0)
+
+
+## regional analysis
 bedoccup <- readRDS("ambulance/bedoccup.rds")
 
 bedoccup <- bedoccup %>%

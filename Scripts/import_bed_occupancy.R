@@ -1,6 +1,7 @@
 #install.packages("readxl")
 library("readxl")
 
+## load regional data
 headers <- as.character(read_excel("ambulance/Beds-Open-Overnight-Web_File-Q4-2021-22-Final-OIUJK.xlsx", n_max=1, skip=14, col_names=FALSE))
 q42122 <- read_excel("ambulance/Beds-Open-Overnight-Web_File-Q4-2021-22-Final-OIUJK.xlsx", skip=17, col_names=headers)
 #headers <- as.character(read_excel("ambulance/Beds-Open-Overnight-Web_File-Q3-2021-22-Final.xlsx", n_max=1, skip=14, col_names=FALSE))
@@ -96,3 +97,19 @@ bedoccup <- rbind(q11213,q21213,q31213,q41213,q11314,q21314,q31314,q41314,q11415
  q31920,q41920,q12021,q22021,q32021,q42021,q12122,q22122,q32122,q42122)
 
 saveRDS(bedoccup, file="ambulance/bedoccup.rds")
+
+## load national data
+
+headers <- as.character(read_excel("Data/Beds-Timeseries-2010-11-onwards-Q4-2021-22-ADJ-for-missings-OIUJK.xls", 
+                     sheet = "Open Overnight", col_names = FALSE, skip = 13, n_max = 1))
+
+England_overnightbeds <- read_excel("Data/Beds-Timeseries-2010-11-onwards-Q4-2021-22-ADJ-for-missings-OIUJK.xls", 
+                                                                                sheet = "Open Overnight", col_names = headers, 
+                                                                                col_types = c("text", "text", "text", 
+                                                                                              "numeric", "numeric", "numeric", 
+                                                                                              "numeric", "numeric", "numeric", 
+                                                                                              "numeric", "numeric", "numeric", 
+                                                                                              "numeric", "numeric", "numeric", 
+                                                                                              "numeric", "numeric", "numeric", 
+                                                                                              "skip", "skip"), skip = 14)
+saveRDS(England_overnightbeds, file="England_overnightbeds.rds")
