@@ -285,6 +285,30 @@ wf_eng<-wf_eng %>%
 
 list_dates<-format(as.Date(seq(ymd('2017-08-31'),ymd('2022-02-08'),by='4 weeks')),"%Y-%m")
 
+plot<-wf_eng %>%
+  filter(group=="England" & met=="fte_count") %>% 
+  filter(date2 %in% list_dates) %>% 
+  ggplot(.,aes(x=date, y=val, group=group))+
+  geom_point(colour='#dd0031')+
+  geom_line(linetype='solid', colour='#dd0031')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
+  ggtitle("England")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
 
 plot<-wf_eng %>%
   filter(group=="Ambulance staff" & met=="fte_count") %>% 
@@ -295,6 +319,7 @@ plot<-wf_eng %>%
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
+  ggtitle("Ambulance Staff")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=60), 
