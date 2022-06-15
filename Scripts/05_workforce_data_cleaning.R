@@ -9,6 +9,7 @@ library(aws.s3)
 library(janitor)
 library(readxl)
 library(dplyr)
+library(tsibble)
 
 #data load 
 workforce_eng<-read_excel(here::here('data', "eng_workforce.xlsx"), sheet=2, skip=6)
@@ -56,14 +57,10 @@ turnover_clean<-turnover %>%
   filter(choose_region=="England" & staff_group %in% 
            c("All staff groups", "Ambulance staff","Support to ambulance staff")) %>% 
   mutate(period=str_sub(turnover_clean$choose_period,5,6)) %>% 
-  mutate(year_start=ifelse(period %in% c(09,06),paste0(30,"-",period,"-",str_sub(turnover_clean$choose_period,3,4)),
-                           paste0(31,"-",period,"-",str_sub(turnover_clean$choose_period,3,4)))) %>%
-  mutate(year_end=ifelse(period %in% c(09,06),paste0(30,"-",period,"-",str_sub(turnover_clean$choose_period,13,14)),
-                                    paste0(31,"-",period,"-",str_sub(turnover_clean$choose_period,13,14)))) %>% 
-  mutate(year_start=as.Date(year_start, origin = "1899-12-30")) %>% 
-  mutate(year_start=lubridate::date(year_start)) %>% 
-  mutate(year_end=as.Date(year_end, origin = "1899-12-30")) %>% 
-  mutate(year_end=lubridate::date(year_end)) 
+  mutate(year_start=str_sub(turnover_clean$choose_period,0,4)) %>% 
+  mutate(year_end=str_sub(turnover_clean$choose_period,10,14)) %>% 
+  mutate(year_start2=yearmonth(paste0(year_start,"-",period))) %>% 
+  mutate(year_end2=yearmonth(paste0(year_end,"-",period)))
 
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
 
