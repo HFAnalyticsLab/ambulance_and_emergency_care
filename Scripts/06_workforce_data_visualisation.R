@@ -85,6 +85,9 @@ wf_eng %>%
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
+
+
+
 wf_eng %>%
   filter(group=="Ambulance staff" & met=="fte_count") %>% 
   mutate(date2=format(as.Date(date), "%Y-%m")) %>% 
