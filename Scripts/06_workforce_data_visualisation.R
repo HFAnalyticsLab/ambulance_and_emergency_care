@@ -153,31 +153,6 @@ turnover %>%
         legend.box.margin=margin(-10,-10,-10,-10))
 
 
-# Leavers and joiners rate ------------------------------------------------
-
-turnover %>%
-  filter(staff_group %in% c("Ambulance staff", "Support to ambulance staff")) %>% 
-  select(date, staff_group, leavers, joiners) %>% 
-  
-  
-  
-  mutate(filter_date=format(as.Date(date), "%Y-%b"))%>% 
-  filter(filter_date %in% list_dates) %>% 
-  ggplot(., aes(x=date, y=leavers, group=staff_group, colour=staff_group))+
-  geom_line(linetype='solid')+
-  scale_x_yearmonth( breaks = '3 months',date_labels = "%b %g")+
-  theme_THF()+
-  labs(x = "Year end", y="Leavers", caption = "NHS Digital-workforce statistics")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
-
 
   
   
