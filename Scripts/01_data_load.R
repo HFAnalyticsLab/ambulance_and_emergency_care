@@ -35,3 +35,11 @@ link<-'https://files.digital.nhs.uk/9D/1F78BA/HCHS%20staff%20in%20NHS%20Trusts%2
 destfile <- here::here('data', "eng_turnover.xlsx")
 curl_download(link, destfile = destfile)
  
+#NHS staff sickness rate 
+
+link<-'https://files.digital.nhs.uk/56/DF921A/ESR_ABSENCE_CSV_NHSE.csv'
+
+destfile <- here::here('data', "eng_sickness.csv")
+curl_download(link, destfile = destfile)
+
+
