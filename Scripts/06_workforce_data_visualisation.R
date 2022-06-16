@@ -21,11 +21,22 @@ wf_eng<-s3read_using(read.csv # Which function are we using to read
                             , bucket = buck) # Bucket name defined above
 
 
+turnover<-s3read_using(read.csv # Which function are we using to read
+                       , object = 'turnover_clean.csv' # File to open
+                       , bucket = buck) # Bucket name defined above
+
+
+
+# Counts --------------------------------------------------------------
+
+list_dates<-format(as.Date(seq(ymd('2017-08-31'),ymd('2022-02-08'),by='4 weeks')),"%Y-%m")
+
+
+
 wf_eng<-wf_eng %>% 
   mutate(date2=format(as.Date(date), "%Y-%m")) 
 
 
-list_dates<-format(as.Date(seq(ymd('2017-08-31'),ymd('2022-02-08'),by='4 weeks')),"%Y-%m")
 
 wf_eng %>%
   filter(group=="England" & met=="headcount") %>% 
@@ -108,3 +119,65 @@ wf_eng %>%
         legend.box.margin=margin(-10,-10,-10,-10))
 
 ggplotly(t)
+
+
+
+# Turnover rates ----------------------------------------------------------
+
+#plotting year end to make it simpler 
+
+turnover<-turnover %>% 
+  mutate(date2=paste0(year_end,"-",ifelse(period==12,period,paste0(0,period)),"-",ifelse(period %in% c(9,6),30,31))) %>% 
+  mutate(date=as.Date(date2, origin = "1899-12-30")) %>% 
+  mutate(date=lubridate::date(date))         
+
+
+
+list_dates<-format(as.Date(seq(ymd('2017-09-30'),ymd('2021-12-31'),by='3 months')),"%Y-%b")
+           
+turnover %>%
+  mutate(filter_date=format(as.Date(date), "%Y-%b"))%>% 
+  filter(filter_date %in% list_dates) %>% 
+  ggplot(., aes(x=date, y=stability_index*100, group=staff_group, colour=staff_group))+
+  geom_line(linetype='solid')+
+  scale_x_yearmonth( breaks = '3 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "Year end", y="Stability Index (%)", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+# Leavers and joiners rate ------------------------------------------------
+
+turnover %>%
+  filter(staff_group %in% c("Ambulance staff", "Support to ambulance staff")) %>% 
+  select(date, staff_group, leavers, joiners) %>% 
+  
+  
+  
+  mutate(filter_date=format(as.Date(date), "%Y-%b"))%>% 
+  filter(filter_date %in% list_dates) %>% 
+  ggplot(., aes(x=date, y=leavers, group=staff_group, colour=staff_group))+
+  geom_line(linetype='solid')+
+  scale_x_yearmonth( breaks = '3 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "Year end", y="Leavers", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+  
+  
