@@ -10,6 +10,7 @@ library(tidyverse)
 library(ggplot2)
 library(THFstyle)
 library(ggtext)
+library(lubridate)
 
 
 #Data load
@@ -24,6 +25,10 @@ wf_eng<-s3read_using(read.csv # Which function are we using to read
 turnover<-s3read_using(read.csv # Which function are we using to read
                        , object = 'turnover_clean.csv' # File to open
                        , bucket = buck) # Bucket name defined above
+
+sick_ab<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'sick_ab_clean.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
 
 
 
@@ -154,5 +159,26 @@ turnover %>%
 
 
 
-  
-  
+
+# Staff sickness and absence ----------------------------------------------
+
+list_dates<-format(as.Date(seq(ymd('2017-09-01'),ymd('2022-04-01'),by='months')),"%Y-%m")
+
+sick_ab %>% 
+  mutate(filter_date=format(as.Date(date2), "%Y-%m"))%>% 
+  filter(filter_date %in% list_dates) %>%
+  arrange(filter_date) %>% 
+  ggplot(., aes(x=date2, y=sa_rate, group=1))+
+  geom_point()+
+  geom_line()+
+  scale_x_yearmonth( breaks = '3 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "Year end", y="Sickness and Absence rate (%)", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
