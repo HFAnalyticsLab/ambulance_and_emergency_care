@@ -26,6 +26,8 @@ amb_incidents<-s3read_using(read.csv # Which function are we using to read
                             , object = 'amb_incidents.csv' # File to open
                             , bucket = buck) # Bucket name defined above
 
+#A&E indicators 
+
 
 
 
@@ -76,6 +78,7 @@ amb_dta<-amb_response %>%
   left_join(amb_incidents, by= c("org_name", "date2", "date", "type"))
 
 
+#Mean response times and incidents 
 df<- amb_dta %>% 
   filter(!str_detect(type,"T")) %>% 
   filter(!str_detect(metric,"90th")) %>% 
@@ -94,9 +97,9 @@ df<- amb_dta %>%
 df %>% 
   distinct(rho_s)
 
-#all correlations are >0.34 suggest they are significant and suggests that there is a relationship between number of incidents and response times 
-#There is a positive correlation between the number of incidents and response times for c1 and c2 types of incidents
-#Whereas there is a negative correlation between number of incidents and response times for c3 and c4 type of incidents 
+#all correlations are >0.34 suggest they are significant and suggests that there is a relationship between number of incidents and mean response times 
+#There is a positive correlation between the number of incidents and mean response times for c1 and c2 types of incidents
+#Whereas there is a negative correlation between number of incidents and mean response times for c3 and c4 type of incidents 
 
 
 correlations_plot <-  function(data=df,var.x="c1"){
@@ -123,8 +126,31 @@ correlations_plot(var.x="c4")
 
 
 
+#90th centile response times and incidents 
+df<- amb_dta %>% 
+  filter(!str_detect(type,"T")) %>% 
+  filter(str_detect(metric,"90th")) %>% 
+  group_by(type) %>% 
+  mutate(
+    incidents=as.numeric(incidents),
+    rank_resp=rank(resp_time2),
+    rank_incidents=rank(incidents),
+    d=rank_resp-rank_incidents, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
 
 
+df %>% 
+  distinct(rho_s)
 
+#same pattern as above, positive correlation for number of incidents and 90th percentile response times for c1 and c2
+#whereas negative correlation for number of incidents and 90th centile response times for c3 and c4 
+
+correlations_plot(var.x="c1")
+correlations_plot(var.x="c2")
+correlations_plot(var.x="c3")
+correlations_plot(var.x="c4")
 
 
