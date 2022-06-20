@@ -70,6 +70,25 @@ s3write_using(turnover_clean # What R object we are saving
               , bucket = buck) # Bucket name defined above
 
 
+#Staff sickness and absence rate 
+sick_ab<-read_csv(here::here('data', "eng_sickness.csv"))
+
+sick_ab_clean<-sick_ab %>% 
+  clean_names() %>% 
+  filter(org_type=="Ambulance") %>% 
+  group_by(date) %>% 
+  summarise(across(where(is.numeric), sum)) %>% 
+  select(-c(sort_date, sa_rate_percent)) %>% 
+  mutate(sa_rate=round((fte_days_sick/fte_days_available)*100,2)) %>% 
+  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d"))
+
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
+
+s3write_using(sick_ab_clean # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'sick_ab_clean.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 
 
