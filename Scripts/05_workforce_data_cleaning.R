@@ -18,15 +18,16 @@ workforce_eng_clean<-workforce_eng %>%
   clean_names() %>% 
   fill(england, .direction='down') %>% 
   mutate(x2=ifelse(is.na(england), "date", x2)) %>% 
-  filter(x2 %in% c("Ambulance staff", "date", "Total")) %>% 
+  filter(x2 %in% c("Ambulance staff", "date", "Total", "Support to ambulance staff")) %>% 
   mutate(england=ifelse(is.na(england),"date",england)) %>% 
   unite(met,england:x2, remove=FALSE) %>%
   t() %>%
   row_to_names(row_number=1) %>% 
   as.data.frame() %>% 
   clean_names() %>% 
-  pivot_longer(c(headcount_total:full_time_equivalent_fte_ambulance_staff), names_to='metric', values_to='val') %>% 
-  mutate(group=ifelse(str_detect(metric, 'total'),"England", "Ambulance staff")) %>% 
+  pivot_longer(c(headcount_total:full_time_equivalent_fte_support_to_ambulance_staff), names_to='metric', values_to='val') %>% 
+  mutate(group=ifelse(str_detect(metric, 'total'),"England", 
+                      ifelse(str_detect(metric, "support"),"Support to Ambulance staff", "Ambulance staff"))) %>% 
   mutate(met=ifelse(str_detect(metric,'headcount'),"headcount", "fte_count")) %>% 
   mutate(date=as.Date(as.numeric(date_date), origin = "1899-12-30")) %>% 
   mutate(date=lubridate::date(date)) %>% 
