@@ -74,14 +74,29 @@ s3write_using(turnover_clean # What R object we are saving
 #Staff sickness and absence rate 
 sick_ab<-read_csv(here::here('data', "eng_sickness.csv"))
 
-sick_ab_clean<-sick_ab %>% 
+amb_sick_ab<-sick_ab %>% 
   clean_names() %>% 
   filter(org_type=="Ambulance") %>% 
   group_by(date) %>% 
   summarise(across(where(is.numeric), sum)) %>% 
   select(-c(sort_date, sa_rate_percent)) %>% 
   mutate(sa_rate=round((fte_days_sick/fte_days_available)*100,2)) %>% 
-  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d"))
+  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d")) %>% 
+  mutate(org_type="Ambulance")
+
+
+eng_sick_ab<-sick_ab %>%
+  clean_names() %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  group_by(date) %>%
+  summarise(across(where(is.numeric), sum)) %>% 
+  select(-c(sort_date, sa_rate_percent)) %>% 
+  mutate(sa_rate=round((fte_days_sick/fte_days_available)*100,2)) %>% 
+  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d")) %>% 
+  arrange(date2) %>% 
+  mutate(org_type= "England")
+
+sick_ab_clean<-rbind(eng_sick_ab, amb_sick_ab)
 
 
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
