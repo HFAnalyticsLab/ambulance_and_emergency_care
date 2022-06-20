@@ -168,12 +168,12 @@ sick_ab %>%
   mutate(filter_date=format(as.Date(date2), "%Y-%m"))%>% 
   filter(filter_date %in% list_dates) %>%
   arrange(filter_date) %>% 
-  ggplot(., aes(x=date2, y=sa_rate, group=1))+
+  ggplot(., aes(x=date2, y=sa_rate, group=org_type, colour=org_type))+
   geom_point()+
   geom_line()+
   scale_x_yearmonth( breaks = '3 months',date_labels = "%b %g")+
   theme_THF()+
-  labs(x = "Year end", y="Sickness and Absence rate (%)", caption = "NHS Digital-workforce statistics")+
+  labs(x = "", y="Sickness and Absence rate (%)", caption = "NHS Digital-workforce statistics")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=60), 
