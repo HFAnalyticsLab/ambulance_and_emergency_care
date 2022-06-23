@@ -38,10 +38,6 @@ aeattend<-s3read_using(readRDS # Which function are we using to read
 
 #Bed occupancy
 
-bedoccup<-s3read_using(readRDS # Which function are we using to read
-                       , object = 'bedoccup.rds' # File to open
-                       , bucket = buck) # Bucket name defined above
-
 overnight_beds<-s3read_using(readRDS # Which function are we using to read
                              , object = 'England_overnightbeds.Rds' # File to open
                              , bucket = buck) # Bucket name defined above
@@ -80,11 +76,11 @@ amb_response<-amb_response %>%
 
 
 
-# correlation between response times --------------------------------------
+# correlation between response times (need to update this- 23/6/22) --------------------------------------
 
 #Mean response times 
 amb_dta<-amb_response %>%
-  filter(str_detect(metric, "90th")) %>% 
+  filter(str_detect(metric, "mean")) %>% 
   pivot_wider(c("org_name", "date"),names_from=  metric, values_from = resp_time2)
 
 df_c1_c1t<-amb_dta %>% 
@@ -227,12 +223,6 @@ amb_dta_c1<-amb_dta %>%
   filter(type=="c1") %>% 
   select(type,resp_time2,incidents) %>% 
   mutate(incidents=as.numeric(incidents))
-
-acf(amb_dta_c1$resp_time2, amb_dta_c1$incidents)
-
-
-acf(amb_dta_c1$resp_time2)
-
 
 
 # 90th centile response times and incidents  ------------------------------
@@ -619,5 +609,16 @@ df<-amb_ae_dta %>%
 
 df %>% 
   distinct(rho_s)
+
+
+# Overnight bed occupancy -------------------------------------------------
+
+England_overnightbeds <- overnight_beds %>%
+  mutate(time=paste0(Year,Period)) %>%
+  mutate(pctoccuptot=as.numeric(Total...14)) %>%
+  mutate(pctoccupgenacute=as.numeric(`General & Acute...15`)) %>% 
+  select(time:pctoccupgenacute)
+
+
 
 
