@@ -12,6 +12,10 @@ library(ggtext)
 library(lubridate)
 library(ggpubr)
 
+
+#Methodology: https://www.r-bloggers.com/2020/03/testing-the-correlation-between-time-series-variables/
+
+
 #Specify bucket 
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
 
@@ -28,10 +32,19 @@ amb_incidents<-s3read_using(read.csv # Which function are we using to read
 
 #A&E indicators 
 
+aeattend<-s3read_using(readRDS # Which function are we using to read
+                       , object = 'aeattend.rds' # File to open
+                       , bucket = buck) # Bucket name defined above
 
+#Bed occupancy
 
+bedoccup<-s3read_using(readRDS # Which function are we using to read
+                       , object = 'bedoccup.rds' # File to open
+                       , bucket = buck) # Bucket name defined above
 
-
+overnight_beds<-s3read_using(readRDS # Which function are we using to read
+                             , object = 'England_overnightbeds.Rds' # File to open
+                             , bucket = buck) # Bucket name defined above
 
 
 #workforce indicators 
@@ -48,8 +61,10 @@ sick_ab<-s3read_using(read.csv # Which function are we using to read
                       , object = 'sick_ab_clean.csv' # File to open
                       , bucket = buck) # Bucket name defined above
 
-#Format data
-#Response times 
+
+# Response Times  ----------------------------------------------------------
+
+
 amb_response<-amb_response %>% 
   filter(org_code=="Eng") %>% 
   pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
@@ -62,9 +77,88 @@ amb_response<-amb_response %>%
   mutate(date2=yearmonth(date)) %>% 
   select(c(org_name:date2)) %>% 
   mutate(type=ifelse(str_detect(substr(metric,0,3),"T"),substr(metric,0,3),substr(metric,0,2))) 
-  
 
-#Number of incidents 
+
+
+# correlation between response times --------------------------------------
+
+#Mean response times 
+amb_dta<-amb_response %>%
+  filter(str_detect(metric, "90th")) %>% 
+  pivot_wider(c("org_name", "date"),names_from=  metric, values_from = resp_time2)
+
+df_c1_c1t<-amb_dta %>% 
+  mutate(
+    rank_c1_resp=rank(c1_mean),
+    rank_c1T_resp=rank(c1T_mean),
+    d=rank_c1_resp-rank_c1T_resp, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df_c1_c1t %>% 
+  distinct(rho_s)
+
+df_c1_c2<-amb_dta %>% 
+  mutate(
+    rank_c1_resp=rank(c1_mean),
+    rank_c2_resp=rank(c2_mean),
+    d=rank_c1_resp-rank_c2_resp, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df_c1_c2 %>% 
+  distinct(rho_s)
+
+df_c1_c3<-amb_dta %>% 
+  mutate(
+    rank_c1_resp=rank(c1_mean),
+    rank_c3_resp=rank(c3_mean),
+    d=rank_c1_resp-rank_c3_resp, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+
+df_c1_c3 %>% 
+  distinct(rho_s)
+
+df_c1_c4<-amb_dta %>% 
+  mutate(
+    rank_c1_resp=rank(c1_mean),
+    rank_c4_resp=rank(c4_mean),
+    d=rank_c1_resp-rank_c4_resp, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+
+df_c1_c4 %>% 
+  distinct(rho_s)
+
+
+
+x<-amb_dta %>% 
+  mutate(
+    rank_c1t_resp=rank(c1T_mean),
+    rank_c4_resp=rank(c4_mean),
+    d=rank_c1t_resp-rank_c4_resp, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+x %>% 
+  distinct(rho_s)
+
+# Incidents ---------------------------------------------------------------
+
+
 amb_incidents<-amb_incidents %>% 
   filter(org_code=="Eng") %>% 
   select(c(year:c4,date)) %>% 
@@ -78,7 +172,11 @@ amb_dta<-amb_response %>%
   left_join(amb_incidents, by= c("org_name", "date2", "date", "type"))
 
 
-#Mean response times and incidents 
+
+
+
+# Mean response times and Incidents ---------------------------------------
+
 df<- amb_dta %>% 
   filter(!str_detect(type,"T")) %>% 
   filter(!str_detect(metric,"90th")) %>% 
@@ -125,8 +223,21 @@ correlations_plot(var.x="c3")
 correlations_plot(var.x="c4")
 
 
+amb_dta_c1<-amb_dta %>% 
+  filter(type=="c1") %>% 
+  select(type,resp_time2,incidents) %>% 
+  mutate(incidents=as.numeric(incidents))
 
-#90th centile response times and incidents 
+acf(amb_dta_c1$resp_time2, amb_dta_c1$incidents)
+
+
+acf(amb_dta_c1$resp_time2)
+
+
+
+# 90th centile response times and incidents  ------------------------------
+
+
 df<- amb_dta %>% 
   filter(!str_detect(type,"T")) %>% 
   filter(str_detect(metric,"90th")) %>% 
@@ -154,3 +265,80 @@ correlations_plot(var.x="c3")
 correlations_plot(var.x="c4")
 
 
+
+# A&E attendances ----------------------------------------------------------
+
+summary(aeattend)
+colnames(aeattend)
+
+aeattend <- aeattend %>%
+  mutate(time=paste0(year, formatC(month, width=2, flag="0"))) %>%
+  mutate(pct4to12hrsadmit=ifelse(totaladmit==0, 0, pct4to12hrsadmit )) %>%
+  mutate(pct12plushrsadmit=ifelse(totaladmit==0, 0, pct12plushrsadmit )) 
+
+summattend <- aeattend %>%
+  drop_na(totalattend) %>%
+  drop_na(`Number of A&E attendances Type 1`) %>%
+  group_by(time) %>%
+  summarise(meanattend=mean(totalattend), meantype1=mean(`Number of A&E attendances Type 1`),
+            meantype2=mean(`Number of A&E attendances Type 2`), meantypeoth=mean(`Number of A&E attendances Other A&E Department`), n=n())
+
+summattend<-summattend %>% 
+  mutate(date=paste0(substr(time,0,4),"-",substr(time,5,6),"-01")) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_name="England")
+
+
+amb_ae_dta<-amb_response %>% 
+  left_join(summattend, by= c("org_name", "date2", "date")) %>% 
+  drop_na()
+
+
+#Correlation between mean attendances
+
+df<-amb_ae_dta %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_meanattend=rank(meanattend),
+    d=rank_resp-rank_meanattend, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#type 1 attendance
+df<-amb_ae_dta %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_meantype1=rank(meantype1),
+    d=rank_resp-rank_meantype1, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#type 2 attendance
+
+
+df<-amb_ae_dta %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_meantype2=rank(meantype2),
+    d=rank_resp-rank_meantype2, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
