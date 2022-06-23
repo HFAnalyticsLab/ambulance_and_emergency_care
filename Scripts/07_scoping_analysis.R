@@ -298,6 +298,7 @@ amb_ae_dta<-amb_response %>%
 #Correlation between mean attendances
 
 df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
   group_by(type) %>% 
   mutate(
     rank_resp=rank(resp_time2),
@@ -313,6 +314,7 @@ df %>%
 
 #type 1 attendance
 df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
   group_by(type) %>% 
   mutate(
     rank_resp=rank(resp_time2),
@@ -330,6 +332,7 @@ df %>%
 
 
 df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
   group_by(type) %>% 
   mutate(
     rank_resp=rank(resp_time2),
@@ -342,3 +345,279 @@ df<-amb_ae_dta %>%
 
 df %>% 
   distinct(rho_s)
+
+#correlation between 90th percentile
+
+#Mean attendance 
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_meanattend=rank(meanattend),
+    d=rank_resp-rank_meanattend, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#type 1 attendance
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_meantype1=rank(meantype1),
+    d=rank_resp-rank_meantype1, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+
+#type 2 attendance
+
+
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_meantype2=rank(meantype2),
+    d=rank_resp-rank_meantype2, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+
+# A&E waiting times -------------------------------------------------------
+
+summattend <- aeattend %>%
+  drop_na(totaladmit) %>%
+  drop_na(pct4to12hrsadmit) %>%
+  drop_na(pct12plushrsadmit) %>%
+  group_by(time) %>%
+  summarise(meanadmit=mean(totaladmit), mean412admit=mean(pct4to12hrsadmit), mean12plusadmit=mean(pct12plushrsadmit), n=n())
+
+summattend<-summattend %>% 
+  mutate(date=paste0(substr(time,0,4),"-",substr(time,5,6),"-01")) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_name="England")
+
+
+amb_ae_dta<-amb_response %>% 
+  left_join(summattend, by= c("org_name", "date2", "date")) %>% 
+  drop_na()
+
+#Correlation between mean attendances
+
+#total admit
+
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(meanadmit),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+
+
+
+#4-12 hrs 
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean412admit),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#+12 hrs 
+
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean12plusadmit),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+
+
+#90th percentile
+
+#total admit
+
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(meanadmit),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+
+#4-12 hrs
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean412admit),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#12+hrs
+
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean12plusadmit),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+
+# waiting times by type ---------------------------------------------------
+
+summattend <- aeattend %>%
+  drop_na(pct4plushrswaittype1) %>%
+  drop_na(pct4plushrswaittype2) %>%
+  group_by(time) %>%
+  summarise(mean4pluswaittype1=mean(pct4plushrswaittype1),
+            mean4pluswaittype2=mean(pct4plushrswaittype2), n=n())
+
+
+summattend<-summattend %>% 
+  mutate(date=paste0(substr(time,0,4),"-",substr(time,5,6),"-01")) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_name="England")
+
+
+amb_ae_dta<-amb_response %>% 
+  left_join(summattend, by= c("org_name", "date2", "date")) %>% 
+  drop_na()
+
+
+#Correlation between mean attendances
+#4+ type 1 
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean4pluswaittype1),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#4+type2
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"mean")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean4pluswaittype2),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#90th percentile
+
+#4+ type 1 
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean4pluswaittype1),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+#4+type2
+df<-amb_ae_dta %>% 
+  filter(str_detect(metric,"90")) %>% 
+  group_by(type) %>% 
+  mutate(
+    rank_resp=rank(resp_time2),
+    rank_x=rank(mean4pluswaittype2),
+    d=rank_resp-rank_x, 
+    d_squared=d^2,
+    d_square_sum=sum(d_squared),
+    n=n(),
+    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+
+df %>% 
+  distinct(rho_s)
+
+
