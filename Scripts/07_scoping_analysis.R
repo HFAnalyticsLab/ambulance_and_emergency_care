@@ -11,6 +11,8 @@ library(THFstyle)
 library(ggtext)
 library(lubridate)
 library(ggpubr)
+library(tsibble)
+library(Hmisc)
 
 
 #Methodology: https://www.r-bloggers.com/2020/03/testing-the-correlation-between-time-series-variables/
@@ -295,16 +297,46 @@ eng_overnightbeds <- overnight_beds %>%
   mutate(time=paste0(Year,Period)) %>%
   mutate(pctoccuptot=as.numeric(Total...14)) %>%
   mutate(pctoccupgenacute=as.numeric(`General & Acute...15`)) %>% 
-  select(Year,time:pctoccupgenacute) %>% 
-  mutate(year_start=str_sub(eng_overnightbeds$Year,0,4)) %>% 
-  mutate(year_end=paste0("20",str_sub(eng_overnightbeds$Year,6,7)))
+  select(Year:Period,time:pctoccupgenacute) %>% 
+  mutate(year2=ifelse(Period %in% c("Q3", "Q4"),paste0(20,substr(Year,6,7)),substr(Year,0,4))) %>% 
+  mutate(time=paste0(Period,"-",year2))
+  
+  
+amb_response<-amb_response %>% 
+  mutate(period=as.numeric(substr(date,6,7))) %>% 
+  mutate(quart= case_when(period>0 &period<4~ "Q4", 
+                          period>3 & period <7 ~ "Q1",
+                          period>6& period<10~ "Q2", 
+                          period>9& period<13~ "Q3")) %>% 
+  mutate(time=paste0(quart,"-",substr(date,0,4))) %>% 
+  group_by(time) %>% 
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) 
+  
 
-# %>% 
-#   mutate(year_start2=yearmonth(paste0(year_start,"-",period))) %>% 
-#   mutate(year_end2=yearmonth(paste0(year_end,"-",period)))
 
-# mutate(date2=paste0(year_end,"-",ifelse(period==12,period,paste0(0,period)),"-",ifelse(period %in% c(9,6),30,31))) %>% 
-#   mutate(date=as.Date(date2, origin = "1899-12-30")) %>% 
-#   mutate(date=lubridate::date(date))   
+amb_bed_dta<-amb_response %>% 
+  left_join(eng_overnightbeds, by= c("time")) %>% 
+  drop_na()
+
+amb_bed_dta<-amb_bed_dta %>% 
+  select(-c("time","year2", "period", "Period", "Year"))
+
+
+#correlations 
+corr <- rcorr(as.matrix(amb_bed_dta), type="spearman")
+corr
+
+t<-flattenCorrMatrix(corr$r, corr$P)
+
+t<-t %>% 
+  filter(!str_detect(column,"c"))
+
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'bed_occupancy_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 
