@@ -164,6 +164,19 @@ corr
 
 t<-flattenCorrMatrix(corr$r, corr$P)
 
+t<-t %>% 
+  filter(!str_detect(column,"mean")) %>% 
+  filter(!str_detect(column,"90"))
+
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'incidents_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
 
 # A&E attendances ----------------------------------------------------------
 
@@ -174,11 +187,6 @@ aeattend <- aeattend %>%
   mutate(time=paste0(year, formatC(month, width=2, flag="0"))) %>%
   mutate(pct4to12hrsadmit=ifelse(totaladmit==0, 0, pct4to12hrsadmit )) %>%
   mutate(pct12plushrsadmit=ifelse(totaladmit==0, 0, pct12plushrsadmit )) 
-
-nax<-aeattend %>% 
-    filter_all(any_vars(is.na(.)))
-
-
 
 summattend <- aeattend %>%
   drop_na(totalattend) %>%
@@ -198,110 +206,25 @@ amb_ae_dta<-amb_response %>%
   left_join(summattend, by= c("org_name", "date2", "date")) %>% 
   drop_na()
 
+amb_ae_dta<-amb_ae_dta %>% 
+  select(-c("time", "org_name", "date2", "date",))
 
-#Correlation between mean attendances
+#correlations 
+corr <- rcorr(as.matrix(amb_ae_dta), type="spearman")
+corr
 
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_meanattend=rank(meanattend),
-    d=rank_resp-rank_meanattend, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+t<-flattenCorrMatrix(corr$r, corr$P)
 
-df %>% 
-  distinct(rho_s)
-
-#type 1 attendance
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_meantype1=rank(meantype1),
-    d=rank_resp-rank_meantype1, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
-#type 2 attendance
+t<-t %>% 
+  filter(!str_detect(column,"c"))
 
 
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_meantype2=rank(meantype2),
-    d=rank_resp-rank_meantype2, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
 
-df %>% 
-  distinct(rho_s)
-
-#correlation between 90th percentile
-
-#Mean attendance 
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_meanattend=rank(meanattend),
-    d=rank_resp-rank_meanattend, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
-#type 1 attendance
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_meantype1=rank(meantype1),
-    d=rank_resp-rank_meantype1, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
-
-#type 2 attendance
-
-
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_meantype2=rank(meantype2),
-    d=rank_resp-rank_meantype2, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'ae_attends_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 
 # A&E waiting times -------------------------------------------------------
@@ -319,121 +242,34 @@ summattend<-summattend %>%
   mutate(date2=yearmonth(date)) %>% 
   mutate(org_name="England")
 
+amb_ae_dta<-amb_response %>% 
+  left_join(summattend, by= c("org_name", "date2", "date")) %>% 
+  drop_na()
+
 
 amb_ae_dta<-amb_response %>% 
   left_join(summattend, by= c("org_name", "date2", "date")) %>% 
   drop_na()
 
-#Correlation between mean attendances
+amb_ae_dta<-amb_ae_dta %>% 
+  select(-c("time", "org_name", "date2", "date", "n"))
 
-#total admit
+#correlations 
+corr <- rcorr(as.matrix(amb_ae_dta), type="spearman")
+corr
 
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(meanadmit),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+t<-flattenCorrMatrix(corr$r, corr$P)
 
-df %>% 
-  distinct(rho_s)
+t<-t %>% 
+  filter(!str_detect(column,"c"))
 
 
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
 
-
-#4-12 hrs 
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean412admit),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
-#+12 hrs 
-
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean12plusadmit),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
-
-
-#90th percentile
-
-#total admit
-
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(meanadmit),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
-
-#4-12 hrs
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean412admit),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
-#12+hrs
-
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean12plusadmit),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
-
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'ae_wait_times_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 # waiting times by type ---------------------------------------------------
 
@@ -457,72 +293,25 @@ amb_ae_dta<-amb_response %>%
   drop_na()
 
 
-#Correlation between mean attendances
-#4+ type 1 
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean4pluswaittype1),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+amb_ae_dta<-amb_ae_dta %>% 
+  select(-c("time", "org_name", "date2", "date", "n"))
 
-df %>% 
-  distinct(rho_s)
+#correlations 
+corr <- rcorr(as.matrix(amb_ae_dta), type="spearman")
+corr
 
-#4+type2
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"mean")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean4pluswaittype2),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+t<-flattenCorrMatrix(corr$r, corr$P)
 
-df %>% 
-  distinct(rho_s)
+t<-t %>% 
+  filter(!str_detect(column,"c"))
 
-#90th percentile
 
-#4+ type 1 
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean4pluswaittype1),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
 
-df %>% 
-  distinct(rho_s)
-
-#4+type2
-df<-amb_ae_dta %>% 
-  filter(str_detect(metric,"90")) %>% 
-  group_by(type) %>% 
-  mutate(
-    rank_resp=rank(resp_time2),
-    rank_x=rank(mean4pluswaittype2),
-    d=rank_resp-rank_x, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df %>% 
-  distinct(rho_s)
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'ae_wait_times_type_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 
 # Overnight bed occupancy -------------------------------------------------
