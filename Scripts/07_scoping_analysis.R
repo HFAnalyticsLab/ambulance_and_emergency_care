@@ -101,15 +101,10 @@ amb_response<-amb_response %>%
   pivot_wider(c("org_name", "date", "date2"),names_from=  metric, values_from = resp_time)
 
 
-# correlation between response times (need to update this- 23/6/22) --------------------------------------
-
-amb_dta<-amb_response %>%
-  select(contains ("mean"))
+# correlation between response times  --------------------------------------
 
 mean_corr <- rcorr(as.matrix(amb_dta), type="spearman")
 mean_corr
-
-
 
 t<-flattenCorrMatrix(mean_corr$r, mean_corr$P)
 
@@ -120,26 +115,6 @@ s3write_using(t # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'response_times_corr.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
-
-#90th percentile
-amb_dta<-amb_response %>%
-  filter(str_detect(metric, "90")) %>% 
-  pivot_wider(c("org_name", "date"),names_from=  metric, values_from = resp_time) %>% 
-  select(-c("org_name", "date"))
-
-percent_corr <- rcorr(as.matrix(amb_dta), type="spearman")
-percent_corr
-
-t<-flattenCorrMatrix(percent_corr$r, percent_corr$P)
-
-
-buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
-
-s3write_using(t # What R object we are saving
-              , FUN = write.csv # Which R function we are using to save
-              , object = 'response_times_90thpercent_corr.csv' # Name of the file to save to (include file type)
-              , bucket = buck) # Bucket name defined above
-
 
 # Incidents ---------------------------------------------------------------
 
