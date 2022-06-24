@@ -16,11 +16,43 @@ library(ggpubr)
 #Methodology: https://www.r-bloggers.com/2020/03/testing-the-correlation-between-time-series-variables/
 
 
+#functions
+
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+  )
+}
+
+
+correlations_plot <-  function(data=df,var.x="c1"){
+  aaa <- ggplot2::enquo(var.x)
+  # bbb <- ggplot2::enquo(var.y)
+  plot <-  data %>%
+    filter(type==!!aaa) %>% 
+    select(type,resp_time2,incidents) %>% 
+    ggscatter(., x = "incidents", y = "resp_time2",
+              add="reg.line",
+              add.params = list(colour="red", fill="lightgray"),
+              conf.int = TRUE,
+              xlab = "Incidents", ylab = "Response Time")+
+    stat_cor(method="spearman", label.x=3, label.y=3)+
+    ggtitle(var.x)
+  
+  plot
+}
+
+
+# Data load ---------------------------------------------------------------
 #Specify bucket 
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
 
 
-#data load
+
 #ambulance indicators 
 amb_response<-s3read_using(read.csv # Which function are we using to read
                       , object = 'amb_RT_regions.csv' # File to open
@@ -60,200 +92,77 @@ sick_ab<-s3read_using(read.csv # Which function are we using to read
 
 # Response Times  ----------------------------------------------------------
 
-
 amb_response<-amb_response %>% 
   filter(org_code=="Eng") %>% 
-  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
-
-amb_response<-amb_response %>% 
-  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
-  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
-  mutate(resp_time2=as_hms(resp_time2)) %>% 
+  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time') %>% 
+  mutate(resp_time=as.numeric(resp_time)) %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
-  select(c(org_name:date2)) %>% 
-  mutate(type=ifelse(str_detect(substr(metric,0,3),"T"),substr(metric,0,3),substr(metric,0,2))) 
-
+  pivot_wider(c("org_name", "date", "date2"),names_from=  metric, values_from = resp_time)
 
 
 # correlation between response times (need to update this- 23/6/22) --------------------------------------
 
-#Mean response times 
 amb_dta<-amb_response %>%
-  filter(str_detect(metric, "mean")) %>% 
-  pivot_wider(c("org_name", "date"),names_from=  metric, values_from = resp_time2)
+  select(contains ("mean"))
 
-df_c1_c1t<-amb_dta %>% 
-  mutate(
-    rank_c1_resp=rank(c1_mean),
-    rank_c1T_resp=rank(c1T_mean),
-    d=rank_c1_resp-rank_c1T_resp, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df_c1_c1t %>% 
-  distinct(rho_s)
-
-df_c1_c2<-amb_dta %>% 
-  mutate(
-    rank_c1_resp=rank(c1_mean),
-    rank_c2_resp=rank(c2_mean),
-    d=rank_c1_resp-rank_c2_resp, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-df_c1_c2 %>% 
-  distinct(rho_s)
-
-df_c1_c3<-amb_dta %>% 
-  mutate(
-    rank_c1_resp=rank(c1_mean),
-    rank_c3_resp=rank(c3_mean),
-    d=rank_c1_resp-rank_c3_resp, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-
-df_c1_c3 %>% 
-  distinct(rho_s)
-
-df_c1_c4<-amb_dta %>% 
-  mutate(
-    rank_c1_resp=rank(c1_mean),
-    rank_c4_resp=rank(c4_mean),
-    d=rank_c1_resp-rank_c4_resp, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-
-df_c1_c4 %>% 
-  distinct(rho_s)
+mean_corr <- rcorr(as.matrix(amb_dta), type="spearman")
+mean_corr
 
 
 
-x<-amb_dta %>% 
-  mutate(
-    rank_c1t_resp=rank(c1T_mean),
-    rank_c4_resp=rank(c4_mean),
-    d=rank_c1t_resp-rank_c4_resp, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
+t<-flattenCorrMatrix(mean_corr$r, mean_corr$P)
 
-x %>% 
-  distinct(rho_s)
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'response_times_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+#90th percentile
+amb_dta<-amb_response %>%
+  filter(str_detect(metric, "90")) %>% 
+  pivot_wider(c("org_name", "date"),names_from=  metric, values_from = resp_time) %>% 
+  select(-c("org_name", "date"))
+
+percent_corr <- rcorr(as.matrix(amb_dta), type="spearman")
+percent_corr
+
+t<-flattenCorrMatrix(percent_corr$r, percent_corr$P)
+
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'response_times_90thpercent_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
 
 # Incidents ---------------------------------------------------------------
-
 
 amb_incidents<-amb_incidents %>% 
   filter(org_code=="Eng") %>% 
   select(c(year:c4,date)) %>% 
-  pivot_longer(c(all_incidents:c4), names_to = 'type', values_to = 'incidents') %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
   select(org_name:date2)
 
 #Join together
 amb_dta<-amb_response %>% 
-  left_join(amb_incidents, by= c("org_name", "date2", "date", "type"))
+  left_join(amb_incidents, by= c("org_name", "date2", "date"))
 
 
+amb_dta<-amb_dta %>% 
+  select(-c("org_name", "date2", "date"))
 
+#correlations 
+corr <- rcorr(as.matrix(amb_dta), type="spearman")
+corr
 
-
-# Mean response times and Incidents ---------------------------------------
-
-df<- amb_dta %>% 
-  filter(!str_detect(type,"T")) %>% 
-  filter(!str_detect(metric,"90th")) %>% 
-  group_by(type) %>% 
-  mutate(
-  incidents=as.numeric(incidents),
-  rank_resp=rank(resp_time2),
-  rank_incidents=rank(incidents),
-  d=rank_resp-rank_incidents, 
-  d_squared=d^2,
-  d_square_sum=sum(d_squared),
-  n=n(),
-  rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-
-df %>% 
-  distinct(rho_s)
-
-#all correlations are >0.34 suggest they are significant and suggests that there is a relationship between number of incidents and mean response times 
-#There is a positive correlation between the number of incidents and mean response times for c1 and c2 types of incidents
-#Whereas there is a negative correlation between number of incidents and mean response times for c3 and c4 type of incidents 
-
-
-correlations_plot <-  function(data=df,var.x="c1"){
-  aaa <- ggplot2::enquo(var.x)
-  # bbb <- ggplot2::enquo(var.y)
-  plot <-  data %>%
-    filter(type==!!aaa) %>% 
-    select(type,resp_time2,incidents) %>% 
-    ggscatter(., x = "incidents", y = "resp_time2",
-              add="reg.line",
-              add.params = list(colour="red", fill="lightgray"),
-              conf.int = TRUE,
-              xlab = "Incidents", ylab = "Response Time")+
-    stat_cor(method="spearman", label.x=3, label.y=3)+
-    ggtitle(var.x)
-
-  plot
-}
- 
-correlations_plot(var.x="c1")
-correlations_plot(var.x="c2")
-correlations_plot(var.x="c3")
-correlations_plot(var.x="c4")
-
-
-amb_dta_c1<-amb_dta %>% 
-  filter(type=="c1") %>% 
-  select(type,resp_time2,incidents) %>% 
-  mutate(incidents=as.numeric(incidents))
-
-
-# 90th centile response times and incidents  ------------------------------
-
-
-df<- amb_dta %>% 
-  filter(!str_detect(type,"T")) %>% 
-  filter(str_detect(metric,"90th")) %>% 
-  group_by(type) %>% 
-  mutate(
-    incidents=as.numeric(incidents),
-    rank_resp=rank(resp_time2),
-    rank_incidents=rank(incidents),
-    d=rank_resp-rank_incidents, 
-    d_squared=d^2,
-    d_square_sum=sum(d_squared),
-    n=n(),
-    rho_s=round((1-(6*(d_square_sum))/(n*(n^2-1))),2))
-
-
-df %>% 
-  distinct(rho_s)
-
-#same pattern as above, positive correlation for number of incidents and 90th percentile response times for c1 and c2
-#whereas negative correlation for number of incidents and 90th centile response times for c3 and c4 
-
-correlations_plot(var.x="c1")
-correlations_plot(var.x="c2")
-correlations_plot(var.x="c3")
-correlations_plot(var.x="c4")
-
+t<-flattenCorrMatrix(corr$r, corr$P)
 
 
 # A&E attendances ----------------------------------------------------------
@@ -265,6 +174,11 @@ aeattend <- aeattend %>%
   mutate(time=paste0(year, formatC(month, width=2, flag="0"))) %>%
   mutate(pct4to12hrsadmit=ifelse(totaladmit==0, 0, pct4to12hrsadmit )) %>%
   mutate(pct12plushrsadmit=ifelse(totaladmit==0, 0, pct12plushrsadmit )) 
+
+nax<-aeattend %>% 
+    filter_all(any_vars(is.na(.)))
+
+
 
 summattend <- aeattend %>%
   drop_na(totalattend) %>%
@@ -613,12 +527,20 @@ df %>%
 
 # Overnight bed occupancy -------------------------------------------------
 
-England_overnightbeds <- overnight_beds %>%
+eng_overnightbeds <- overnight_beds %>%
   mutate(time=paste0(Year,Period)) %>%
   mutate(pctoccuptot=as.numeric(Total...14)) %>%
   mutate(pctoccupgenacute=as.numeric(`General & Acute...15`)) %>% 
-  select(time:pctoccupgenacute)
+  select(Year,time:pctoccupgenacute) %>% 
+  mutate(year_start=str_sub(eng_overnightbeds$Year,0,4)) %>% 
+  mutate(year_end=paste0("20",str_sub(eng_overnightbeds$Year,6,7)))
 
+# %>% 
+#   mutate(year_start2=yearmonth(paste0(year_start,"-",period))) %>% 
+#   mutate(year_end2=yearmonth(paste0(year_end,"-",period)))
 
+# mutate(date2=paste0(year_end,"-",ifelse(period==12,period,paste0(0,period)),"-",ifelse(period %in% c(9,6),30,31))) %>% 
+#   mutate(date=as.Date(date2, origin = "1899-12-30")) %>% 
+#   mutate(date=lubridate::date(date))   
 
 
