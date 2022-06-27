@@ -311,7 +311,6 @@ amb_response<-amb_response %>%
   mutate(time=paste0(quart,"-",substr(date,0,4))) %>% 
   group_by(time) %>% 
   summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) 
-  
 
 
 amb_bed_dta<-amb_response %>% 
@@ -337,6 +336,67 @@ buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulanc
 s3write_using(t # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'bed_occupancy_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
+
+
+# fte count ---------------------------------------------------------------
+
+list_dates<-format(as.Date(seq(ymd('2017-08-31'),ymd('2022-02-08'),by='4 weeks')),"%Y-%m")
+
+wf_eng_amb<-wf_eng %>% 
+    mutate(date=as.Date(date, format="%Y-%m-%d")) %>%
+    mutate(date2=yearmonth(date)) %>%
+  filter(str_detect(group,"Ambulance")& met=="fte_count") %>% 
+  pivot_wider(c(date, date2), names_from = group, values_from=val) %>% 
+  clean_names() %>% 
+  mutate(total=ambulance_staff+support_to_ambulance_staff)
+
+amb_wf_dta<-amb_response %>% 
+  select(-c(date, org_name)) %>% 
+  left_join(wf_eng_amb, by= c("date2")) %>% 
+  drop_na()
+
+#correlations 
+corr <- rcorr(as.matrix(amb_wf_dta[,c(2:11,15)]), type="spearman")
+corr
+
+t<-flattenCorrMatrix(corr$r, corr$P)
+
+t<-t %>% 
+  filter(column=="total")
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'fte_total_count_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+#To include the types
+
+wf_eng_amb<-wf_eng_amb %>% 
+  filter(date2> yearmonth(as.Date("2019-04-01", format="%Y-%m-%d")))
+
+amb_wf_dta<-amb_response %>% 
+  select(-c(date, org_name)) %>% 
+  left_join(wf_eng_amb, by= c("date2")) %>% 
+  drop_na()
+
+corr <- rcorr(as.matrix(amb_wf_dta[,c(2:11,13:14)]), type="spearman")
+corr
+
+t<-flattenCorrMatrix(corr$r, corr$P)
+
+t<-t %>% 
+  filter(str_detect(column, "ambulance"))
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'fte_by_count_corr.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
 
 
