@@ -400,3 +400,72 @@ s3write_using(t # What R object we are saving
               , bucket = buck) # Bucket name defined above
 
 
+# Turnover rate -----------------------------------------------------------
+
+
+#data is every 3 months but for a year [not sure if this is feasible ]
+turnover_clean<-turnover %>% 
+  select(staff_group, stability_index, period, year_end) %>% 
+  mutate(date=as.Date(paste0(year_end,"-",period,"-01"), format="%Y-%m-%d")) %>%
+  mutate(date2=yearmonth(date)) %>% 
+  pivot_wider(c(date, date2), names_from=staff_group, values_from=stability_index) %>% 
+  clean_names() %>% 
+  mutate(amb_total=ambulance_staff+support_to_ambulance_staff)
+
+
+
+amb_response_turnover<-amb_response %>% 
+  
+
+
+
+amb_turnover_dta<-amb_response %>% 
+  select(-c(org_name, date)) %>% 
+  left_join(turnover_clean, by= c("date2")) %>% 
+  drop_na() %>% 
+  select(-date2)
+
+
+corr <- rcorr(as.matrix(), type="spearman")
+corr
+
+t<-flattenCorrMatrix(corr$r, corr$P)
+
+t<-t %>% 
+  filter(str_detect(column, "ambulance"))
+
+
+
+
+
+# Staff sickness and absence rate -----------------------------------------
+
+sick_ab_clean<-sick_ab %>% 
+  select(-X) %>% 
+  mutate(date=as.Date(date2, format="%Y-%m-%d")) %>%
+  mutate(date2=yearmonth(date)) %>% 
+  filter(org_type=="Ambulance")
+  
+
+amb_sickab_dta<-amb_response %>% 
+  select(-c(org_name, date)) %>% 
+  left_join(sick_ab_clean, by= c("date2")) %>% 
+  drop_na() %>% 
+  select(-c(date, date2, org_type))
+
+
+corr <- rcorr(as.matrix(amb_sickab_dta), type="spearman")
+corr
+
+t<-flattenCorrMatrix(corr$r, corr$P)
+
+t<-t %>% 
+  filter(str_detect(column, "sa_rate"))
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(t # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'sa_rate_corr.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
