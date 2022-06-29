@@ -82,3 +82,48 @@ s3write_using(amb_incidents # What R object we are saving
               , bucket = buck) # Bucket name defined above
 
 
+
+# Calls -------------------------------------------------------------------
+
+amb_dta_clean<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(0:6, 114)))
+
+names(amb_dta_clean)[6:13]<-c("contact_count", "calls_answered", "answered_times_total", "answered_times_mean", 
+                              "answered_times_median", "answered_times_95","answered_times_99", "answered_times_90")
+
+amb_calls<-amb_dta_clean %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
+
+#### save R objects from the environment directly to your s3 bucket
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
+
+s3write_using(amb_calls # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amb_calls.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
+# Resources ---------------------------------------------------------------
+
+
+amb_dta_clean<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(8:12, 39:48)))
+
+names(amb_dta_clean)[6:10]<-c("c1", "c1t", "c2", "c3", "c4")
+names(amb_dta_clean)[11:20]<-c("c1_alloc","c1_arrive", "c1t_alloc","c1t_arrive", "c2_alloc","c2_arrive", "c3_alloc","c3_arrive","c4_alloc","c4_arrive")
+
+amb_resources<-amb_dta_clean %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
+
+
+#### save R objects from the environment directly to your s3 bucket
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
+
+s3write_using(amb_resources # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amb_resources.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
