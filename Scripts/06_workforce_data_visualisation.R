@@ -11,7 +11,8 @@ library(ggplot2)
 library(THFstyle)
 library(ggtext)
 library(lubridate)
-
+library(tsibble)
+library(plotly)
 
 #Data load
 
@@ -39,7 +40,9 @@ list_dates<-format(as.Date(seq(ymd('2017-08-31'),ymd('2022-02-08'),by='4 weeks')
 
 
 wf_eng<-wf_eng %>% 
-  mutate(date2=format(as.Date(date), "%Y-%m")) 
+  mutate(date2=format(as.Date(date), "%Y-%m")) %>% 
+  select(-X)
+
 
 
 
@@ -124,6 +127,54 @@ wf_eng %>%
         legend.box.margin=margin(-10,-10,-10,-10))
 
 ggplotly(t)
+
+
+wf_eng %>%
+  filter(str_detect(group,"Ambulance") &met=="fte_count") %>% 
+  mutate(date2=format(as.Date(date), "%Y-%m")) %>% 
+  arrange(date2) %>% 
+  ggplot(.,aes(x=date, y=val, group=group, colour=group))+
+  geom_point()+
+  geom_line(linetype='solid')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+wf_eng_amb<-wf_eng %>% 
+  mutate(date2=format(as.Date(date), "%Y-%m")) %>% 
+  filter(date2 %in% list_dates) %>% 
+  filter(met=="fte_count") %>% 
+  filter(str_detect(group, "Ambulance")) %>% 
+  group_by(date2) %>% 
+  mutate(total=sum(val)) %>% 
+  select(-c("group","met","val" )) %>% 
+  distinct()
+
+wf_eng_amb %>%
+  arrange(date2) %>% 
+  ggplot(.,aes(x=date, y=total, group=1))+
+  geom_point()+
+  geom_line(linetype='solid')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
 
 
 
