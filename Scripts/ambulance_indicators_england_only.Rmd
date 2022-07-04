@@ -22,6 +22,7 @@ library(tidyverse)
 library(THFstyle)
 library(plotly)
 library(tsibble)
+library(knitr)
 
 ```
 
@@ -469,4 +470,179 @@ ggplotly(plot) %>%
 
 
 ```
+
+
+# Correlations {.tabset}
+
+## Ambulance indicators {.tabset}
+
+### Response Times
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'response_times_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+
+
+```
+
+### Incidents
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'incidents_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+## A&E indicators {.tabset}
+
+### Attendances 
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'ae_attends_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+### Waiting Times
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'ae_wait_times_type_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+
+### Admissions and waiting times till admissions 
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'ae_wait_times_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+
+## Bed occupancy indicators {.tabset}
+
+### Overnight bed occupancy 
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'bed_occupancy_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+## Workforce indicators {.tabset}
+
+### FTE headcount
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'fte_total_count_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+### Staff sickness and absence rate
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'sa_rate_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+
 
