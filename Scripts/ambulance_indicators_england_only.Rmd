@@ -22,6 +22,7 @@ library(tidyverse)
 library(THFstyle)
 library(plotly)
 library(tsibble)
+library(knitr)
 
 ```
 
@@ -270,6 +271,9 @@ ggplotly(plot) %>%
 
 # Workforce 
 
+## FTE count {.tabset}
+
+### England
 ```{r, echo=FALSE}
 
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
@@ -309,17 +313,21 @@ ggplotly(plot) %>%
   layout(legend=list(title=list(text=''))) %>% 
   layout(autosize = F, width = 1200, height = 500, margin = m)
 
+```
 
+### Ambulance staff
+
+```{r echo=FALSE}
 plot<-wf_eng %>%
-  filter(group=="Ambulance staff" & met=="fte_count") %>% 
-  filter(date2 %in% list_dates) %>% 
-  ggplot(.,aes(x=date, y=val, group=group))+
-  geom_point(colour='#dd0031')+
-  geom_line(linetype='solid', colour='#dd0031')+
+  filter(str_detect(group,"Ambulance") &met=="fte_count") %>% 
+  mutate(date2=format(as.Date(date), "%Y-%m")) %>% 
+  arrange(date2) %>% 
+  ggplot(.,aes(x=date, y=val, group=group, colour=group))+
+  geom_point()+
+  geom_line(linetype='solid')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
-  ggtitle("Ambulance Staff")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=60), 
@@ -333,6 +341,475 @@ ggplotly(plot) %>%
   layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
   layout(legend=list(title=list(text=''))) %>% 
   layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
 ```
 
+### Total ambulance staf
+
+```{r, echo=FALSE}
+
+wf_eng_amb<-wf_eng %>% 
+  mutate(date2=format(as.Date(date), "%Y-%m")) %>% 
+  filter(date2 %in% list_dates) %>% 
+  filter(met=="fte_count") %>% 
+  filter(str_detect(group, "Ambulance")) %>% 
+  group_by(date2) %>% 
+  mutate(total=sum(val)) %>% 
+  select(-c("group","met","val" )) %>% 
+  distinct()
+
+
+plot<-wf_eng_amb %>%
+  arrange(date2) %>% 
+  ggplot(.,aes(x=date, y=total, group=1))+
+  geom_point(colour='#dd0031')+
+  geom_line(linetype='solid', colour='#dd0031')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+```
+
+
+
+## Turnover rate
+
+```{r, echo=FALSE}
+
+turnover<-s3read_using(read.csv # Which function are we using to read
+                       , object = 'turnover_clean.csv' # File to open
+                       , bucket = buck) # Bucket name defined above
+turnover<-turnover %>% 
+  mutate(date2=paste0(year_end,"-",ifelse(period==12,period,paste0(0,period)),"-",ifelse(period %in% c(9,6),30,31))) %>% 
+  mutate(date=as.Date(date2, origin = "1899-12-30")) %>% 
+  mutate(date=lubridate::date(date))         
+
+
+
+list_dates<-format(as.Date(seq(ymd('2017-09-30'),ymd('2021-12-31'),by='3 months')),"%Y-%b")
+           
+plot<-turnover %>%
+  mutate(filter_date=format(as.Date(date), "%Y-%b"))%>% 
+  filter(filter_date %in% list_dates) %>% 
+  ggplot(., aes(x=date, y=stability_index*100, group=staff_group, colour=staff_group))+
+  geom_line(linetype='solid')+
+  scale_x_yearmonth( breaks = '3 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "Year end", y="Stability Index (%)", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+## Sick and absence rate 
+
+Includes ambulance and support to ambulance staff 
+
+```{r, echo=FALSE}
+
+
+sick_ab<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'sick_ab_clean.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+           
+list_dates<-format(as.Date(seq(ymd('2017-09-01'),ymd('2022-04-01'),by='months')),"%Y-%m")
+
+plot<-sick_ab %>% 
+  mutate(filter_date=format(as.Date(date2), "%Y-%m"))%>% 
+  filter(filter_date %in% list_dates) %>%
+  arrange(filter_date) %>% 
+  ggplot(., aes(x=date2, y=sa_rate, group=org_type, colour=org_type))+
+  geom_point()+
+  geom_line()+
+  scale_x_yearmonth( breaks = '3 months',date_labels = "%b %g")+
+  theme_THF()+
+  labs(x = "", y="Sickness and Absence rate (%)", caption = "NHS Digital-workforce statistics")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+
+# Correlations {.tabset}
+
+## Ambulance indicators {.tabset}
+
+### Response Times
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'response_times_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+
+
+```
+
+### Incidents
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'incidents_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+## A&E indicators {.tabset}
+
+### Attendances 
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'ae_attends_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+### Waiting Times
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'ae_wait_times_type_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+
+### Admissions and waiting times till admissions 
+
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'ae_wait_times_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+
+## Bed occupancy indicators {.tabset}
+
+### Overnight bed occupancy 
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'bed_occupancy_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+## Workforce indicators {.tabset}
+
+### FTE headcount
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'fte_total_count_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+### Staff sickness and absence rate
+```{r, echo=FALSE}
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance'
+
+tab<-s3read_using(read.csv # Which function are we using to read
+                  , object = 'sa_rate_corr.csv' # File to open
+                  , bucket = buck) # Bucket name defined above
+
+tab<-tab %>% 
+  mutate(cor=ifelse(p>0.05,round(cor,2), paste0(round(cor,2),"*"))) %>% 
+  select(-c(X, p)) %>% 
+  pivot_wider(names_from = row, values_from=cor) %>% 
+  rename('variables'='column')
+
+kable(tab, caption= "* p<0.05")
+
+```
+
+# Calls {.tabset}
+
+## Counts
+
+```{r, echo=FALSE}
+
+# Data load -----------------------------------------------------------------
+
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+amb_dta<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'amb_calls.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+
+amb_dta_plot<-amb_dta %>% 
+  pivot_longer(c(answered_times_mean:answered_times_90), names_to = 'metric', values_to = 'answer_time')
+
+amb_dta_plot<-amb_dta_plot %>% 
+  mutate(answer_time2=as.POSIXct(as.numeric(answer_time),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(answer_time2=format(answer_time2, format="%H:%M:%S")) %>% 
+  mutate(answer_time2=as_hms(answer_time2)) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West"))) %>% 
+  mutate(contact_count=as.numeric(contact_count)) %>% 
+  mutate(calls_answered=as.numeric(calls_answered)) %>% 
+  select(c(contact_count:calls_answered,date:org_lab))
+
+
+plot<-amb_dta_plot %>%
+  filter(org_lab=="England") %>%
+  select(-c("metric", "answer_time", "answer_time2")) %>% 
+  pivot_longer(c(contact_count, calls_answered), names_to="metric", values_to="count") %>% 
+  ggplot(.,aes(x=date2, y=count, group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_line(aes(y=calls_answered),linetype='solid', colour="blue")+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+
+## Mean call answer times 
+
+```{r, echo=FALSE}
+
+plot<-amb_dta_plot %>%
+  filter(org_lab=="England" & metric=="answered_times_mean") %>%
+  ggplot(.,aes(x=date2, y=answer_time2, group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Call answer times (seconds)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+```
+
+
+# Resources 
+
+```{r, echo=FALSE}
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+amb_dta<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'amb_resources.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+
+amb_incidents<-amb_dta %>% 
+  select(date, org_name,c1:c4) %>% 
+  pivot_longer(c(c1:c4), names_to = 'type', values_to = 'incidents')
+
+type<-c("c1", "c1t", "c2", "c3", "c4")
+
+amb_alloc<-amb_dta %>% 
+  select(date, org_name,paste0(type,"_alloc")) %>% 
+  pivot_longer(c(c1_alloc:c4_alloc), names_to = 'type', values_to = 'alloc') %>% 
+  mutate(type=ifelse(str_detect(type, "t"),substr(type, 0,3), substr(type,0,2)))
+
+amb_arrive<-amb_dta %>% 
+  select(date, org_name,paste0(type,"_arrive")) %>% 
+  pivot_longer(c(c1_arrive:c4_arrive), names_to = 'type', values_to = 'arrive') %>% 
+  mutate(type=ifelse(str_detect(type, "t"),substr(type, 0,3), substr(type,0,2)))
+
+
+amb_dta_plot<-amb_incidents %>% 
+  left_join(amb_alloc, by=c("date", "org_name", "type")) %>% 
+  left_join(amb_arrive, by=c("date", "org_name", "type")) %>% 
+  mutate(incidents=as.numeric(incidents),
+         alloc=as.numeric(alloc),
+         arrive=as.numeric(arrive)) %>% 
+  mutate(mean_alloc=alloc/incidents) %>% 
+  mutate(mean_arrive=arrive/incidents) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West")))
+
+plot<-amb_dta_plot %>%
+  filter(org_lab=="England") %>%
+  pivot_longer(c(mean_alloc, mean_arrive), names_to="metric", values_to="count") %>% 
+  ggplot(.,aes(x=date2, y=count, group=type, colour=type))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(metric))+
+  scale_colour_THF()+
+  labs(x = "", y="Mean resources arriving on scene", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
 

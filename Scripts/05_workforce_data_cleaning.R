@@ -18,15 +18,16 @@ workforce_eng_clean<-workforce_eng %>%
   clean_names() %>% 
   fill(england, .direction='down') %>% 
   mutate(x2=ifelse(is.na(england), "date", x2)) %>% 
-  filter(x2 %in% c("Ambulance staff", "date", "Total")) %>% 
+  filter(x2 %in% c("Ambulance staff", "date", "Total", "Support to ambulance staff")) %>% 
   mutate(england=ifelse(is.na(england),"date",england)) %>% 
   unite(met,england:x2, remove=FALSE) %>%
   t() %>%
   row_to_names(row_number=1) %>% 
   as.data.frame() %>% 
   clean_names() %>% 
-  pivot_longer(c(headcount_total:full_time_equivalent_fte_ambulance_staff), names_to='metric', values_to='val') %>% 
-  mutate(group=ifelse(str_detect(metric, 'total'),"England", "Ambulance staff")) %>% 
+  pivot_longer(c(headcount_total:full_time_equivalent_fte_support_to_ambulance_staff), names_to='metric', values_to='val') %>% 
+  mutate(group=ifelse(str_detect(metric, 'total'),"England", 
+                      ifelse(str_detect(metric, "support"),"Support to Ambulance staff", "Ambulance staff"))) %>% 
   mutate(met=ifelse(str_detect(metric,'headcount'),"headcount", "fte_count")) %>% 
   mutate(date=as.Date(as.numeric(date_date), origin = "1899-12-30")) %>% 
   mutate(date=lubridate::date(date)) %>% 
@@ -70,6 +71,40 @@ s3write_using(turnover_clean # What R object we are saving
               , bucket = buck) # Bucket name defined above
 
 
+#Staff sickness and absence rate 
+sick_ab<-read_csv(here::here('data', "eng_sickness.csv"))
+
+amb_sick_ab<-sick_ab %>% 
+  clean_names() %>% 
+  filter(org_type=="Ambulance") %>% 
+  group_by(date) %>% 
+  summarise(across(where(is.numeric), sum)) %>% 
+  select(-c(sort_date, sa_rate_percent)) %>% 
+  mutate(sa_rate=round((fte_days_sick/fte_days_available)*100,2)) %>% 
+  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d")) %>% 
+  mutate(org_type="Ambulance")
+
+
+eng_sick_ab<-sick_ab %>%
+  clean_names() %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
+  group_by(date) %>%
+  summarise(across(where(is.numeric), sum)) %>% 
+  select(-c(sort_date, sa_rate_percent)) %>% 
+  mutate(sa_rate=round((fte_days_sick/fte_days_available)*100,2)) %>% 
+  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d")) %>% 
+  arrange(date2) %>% 
+  mutate(org_type= "England")
+
+sick_ab_clean<-rbind(eng_sick_ab, amb_sick_ab)
+
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
+
+s3write_using(sick_ab_clean # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'sick_ab_clean.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 
 
