@@ -37,9 +37,11 @@ amb_dta_plot<-amb_dta_plot %>%
   mutate(calls_answered=as.numeric(calls_answered)) %>% 
   select(c(contact_count:calls_answered,date:org_lab))
 
-##so demand is going up in recent months for the whole system
+
+#just like with response times, answer times have also gone up, so suggesting it's an increase 
+#in demand for the whole system and not just to do with transporting to ED 
 amb_dta_plot %>%
-  filter(org_lab=="England") %>%
+  filter(org_lab=="England" & metric=="answered_times_mean") %>%
   ggplot(.,aes(x=date2, y=answer_time2, group=metric, colour=metric))+
   geom_line(linetype='solid')+
   # geom_point(size=0.25)+
@@ -59,12 +61,13 @@ amb_dta_plot %>%
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
-##so demand is going up in recent months for the whole system
 amb_dta_plot %>%
   filter(org_lab=="England") %>%
-  ggplot(.,aes(x=date2,))+
-  geom_line(aes(y=contact_count),linetype='solid', colour="red")+
-  geom_line(aes(y=calls_answered),linetype='solid', colour="blue")+
+  select(-c("metric", "answer_time", "answer_time2")) %>% 
+  pivot_longer(c(contact_count, calls_answered), names_to="metric", values_to="count") %>% 
+  ggplot(.,aes(x=date2, y=count, group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # geom_line(aes(y=calls_answered),linetype='solid', colour="blue")+
   # geom_point(size=0.25)+
   # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
   # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
