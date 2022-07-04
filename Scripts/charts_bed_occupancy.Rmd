@@ -24,17 +24,32 @@ Englovernightbeds <- Englovernightbeds %>%
   mutate(time=paste0(Year,Period)) %>%
   mutate(pctoccuptot=as.numeric(Total...14)) %>%
   mutate(pctoccupgenacute=as.numeric(`General & Acute...15`))
+  mutate(pctoccupgenacute=as.numeric(`General & Acute...15`)) %>%
+  mutate(pctoccuptotcovid=ifelse(Year=="2020/21" | Year=="2021/22", pctoccuptot+0.01, pctoccuptot)) %>% ## add 1 percent to occupancy during pandemic
+  mutate(pctoccupgenacutecovid=ifelse(Year=="2020/21"| Year=="2021/22", pctoccupgenacute+0.01, pctoccupgenacute))
 
 
 ggplot() +
   geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccuptot), color="blue", group=1) +
   geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccupgenacute), color="red", group=1) +
+  geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccuptotcovid), color="blue", group=1) +
+  geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccupgenacutecovid), color="red", group=1) +
   ggtitle("Beds occupied 2010-2021") + 
   ylab("% occupied") +
   xlab("Year and quarter") +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
   ggtitle("blue = All beds, red=General & Acute beds") +
   ylim(0.5,1.0)
+
+coeff <- 100000
+ggplot(Englovernightbeds, aes(x=time)) +
+  geom_line(aes(y=pctoccuptotcovid), color="blue", group=1) +
+  geom_line(aes(y=Total...4/coeff), color="red", group=1) +
+  ggtitle("Total overnight beds 2010-2021") + 
+  xlab("Year and quarter") +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  scale_y_continuous(name="% occupied", sec.axis=sec_axis(~.*coeff, name="Number of beds")) +
+  ggtitle("blue = Number of beds, red=% occupied") 
 
 ```
 
