@@ -1,6 +1,8 @@
 ---
 title: "Bed_occupancy 2010/11 to 2021/22"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -23,33 +25,49 @@ Englovernightbeds <- readRDS("England_overnightbeds.Rds")
 Englovernightbeds <- Englovernightbeds %>%
   mutate(time=paste0(Year,Period)) %>%
   mutate(pctoccuptot=as.numeric(Total...14)) %>%
-  mutate(pctoccupgenacute=as.numeric(`General & Acute...15`))
   mutate(pctoccupgenacute=as.numeric(`General & Acute...15`)) %>%
+  mutate(pctoccupmh=as.numeric(`Mental Illness...18`)) %>%
   mutate(pctoccuptotcovid=ifelse(Year=="2020/21" | Year=="2021/22", pctoccuptot+0.01, pctoccuptot)) %>% ## add 1 percent to occupancy during pandemic
-  mutate(pctoccupgenacutecovid=ifelse(Year=="2020/21"| Year=="2021/22", pctoccupgenacute+0.01, pctoccupgenacute))
+  mutate(pctoccupgenacutecovid=ifelse(Year=="2020/21"| Year=="2021/22", pctoccupgenacute+0.01, pctoccupgenacute)) %>%
+  mutate(pctoccupmhcovid=ifelse(Year=="2020/21"| Year=="2021/22", pctoccupmh+0.01, pctoccupmh)) 
 
 
-ggplot() +
-  geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccuptot), color="blue", group=1) +
-  geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccupgenacute), color="red", group=1) +
-  geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccuptotcovid), color="blue", group=1) +
-  geom_line(mapping=aes(x=Englovernightbeds$time, y=Englovernightbeds$pctoccupgenacutecovid), color="red", group=1) +
-  ggtitle("Beds occupied 2010-2021") + 
-  ylab("% occupied") +
+coeff=max(Englovernightbeds$Total...4)
+ggp1 <- ggplot(Englovernightbeds) +
+  geom_bar(aes(time, Total...4), color="red", stat="identity") +
   xlab("Year and quarter") +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  ggtitle("blue = All beds, red=General & Acute beds") +
-  ylim(0.5,1.0)
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+ggp2 <- ggp1 +
+  geom_line(aes(time, pctoccuptotcovid*coeff, group=1), color="blue", lwd=2 ) 
+ggp3 <- ggp2 +
+  scale_y_continuous(name="No. of beds", sec.axis=sec_axis(~./coeff, name="proportion occupied")) +
+  ggtitle("Total overnight beds") 
+ggp3
 
-coeff <- 100000
-ggplot(Englovernightbeds, aes(x=time)) +
-  geom_line(aes(y=pctoccuptotcovid), color="blue", group=1) +
-  geom_line(aes(y=Total...4/coeff), color="red", group=1) +
-  ggtitle("Total overnight beds 2010-2021") + 
+
+coeff=max(Englovernightbeds$`General & Acute...5`)
+ggp1 <- ggplot(Englovernightbeds) +
+  geom_bar(aes(time, `General & Acute...5`), color="red", stat="identity") +
   xlab("Year and quarter") +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  scale_y_continuous(name="% occupied", sec.axis=sec_axis(~.*coeff, name="Number of beds")) +
-  ggtitle("blue = Number of beds, red=% occupied") 
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+ggp2 <- ggp1 +
+  geom_line(aes(time, pctoccupgenacutecovid*coeff, group=1), color="blue", lwd=2 ) 
+ggp3 <- ggp2 +
+  scale_y_continuous(name="No. of beds", sec.axis=sec_axis(~./coeff, name="proportion occupied")) +
+  ggtitle("General & acute overnight beds") 
+ggp3
+
+coeff=max(Englovernightbeds$`Mental Illness...8`)
+ggp1 <- ggplot(Englovernightbeds) +
+  geom_bar(aes(time, `Mental Illness...8`), color="red", stat="identity") +
+  xlab("Year and quarter") +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+ggp2 <- ggp1 +
+  geom_line(aes(time, pctoccupmhcovid*coeff, group=1), color="blue", lwd=2 ) 
+ggp3 <- ggp2 +
+  scale_y_continuous(name="No. of beds", sec.axis=sec_axis(~./coeff, name="proportion occupied")) +
+  ggtitle("Mental Illness overnight beds") 
+ggp3
 
 ```
 
