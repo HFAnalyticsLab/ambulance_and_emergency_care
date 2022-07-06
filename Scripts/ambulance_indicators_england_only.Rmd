@@ -23,6 +23,7 @@ library(THFstyle)
 library(plotly)
 library(tsibble)
 library(knitr)
+library(scales)
 
 ```
 
@@ -126,7 +127,7 @@ trends_graph(var.x=org_list[1])
 
 ```
 
-# Incidents
+# Incidents {.tabset}
 
 ```{r, echo=FALSE}
 
@@ -189,6 +190,49 @@ ggplotly(plot) %>%
 
 
 ```
+
+
+
+## All incidents and category 1
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+
+amb_incidents2<-amb_incidents %>% 
+  filter(org_code=="Eng") %>% 
+  select(c(year:c4,date)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  select(all_incidents:date2)
+
+
+prop_incidents<-amb_incidents2 %>% 
+  mutate(all_incidents=as.numeric(all_incidents),
+          c1_prop=as.numeric(c1)/as.numeric(all_incidents),
+         c2_prop=as.numeric(c2)/as.numeric(all_incidents),
+         c3_prop=as.numeric(c3)/as.numeric(all_incidents),
+         c4_prop=as.numeric(c4)/as.numeric(all_incidents))
+
+coeff=max(prop_incidents$all_incidents)
+ggp1 <- ggplot(prop_incidents) +
+  geom_bar(aes(date2, all_incidents), color="gray69", stat="identity", fill="gray69", alpha=.4) +
+  scale_y_continuous(labels=comma)+
+  xlab("") +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+ggp2 <- ggp1 +
+  geom_line(aes(date2, c1_prop*coeff, group=1), color="red", lwd=0.5, linetype='longdash')
+ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage of C1 incidents (%)")) +
+  geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  theme_THF()
+ggp3
+
+```
+
+
 
 ## Category 
 

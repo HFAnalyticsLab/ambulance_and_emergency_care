@@ -6,8 +6,12 @@ library(rio)
 library(lubridate)
 library(ggplot2)
 library(hms)
+library(tsibble)
 library(tidyverse)
 library(THFstyle)
+library(fpp2)
+library(zoo)
+library(scales)
 
 
 rm(list=ls())
@@ -266,4 +270,208 @@ amb_dta_incidents_trusts %>%
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+#Calculations (England) ----------------------------------------
+
+#Categories 
+amb_incidents2<-amb_incidents %>% 
+  filter(org_code=="Eng") %>% 
+  select(c(year:c4,date)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  select(all_incidents:date2)
+
+
+roll_mean<-amb_incidents2 %>% 
+  mutate(all_incidents_mov_av=rollmean(as.numeric(all_incidents), k=3,fill=NA),
+         c1_mov_av=rollmean(as.numeric(c1), k=3,fill=NA),
+         c2_mov_av=rollmean(as.numeric(c2), k=3,fill=NA),
+         c3_mov_av=rollmean(as.numeric(c3), k=3,fill=NA),
+         c4_mov_av=rollmean(as.numeric(c4), k=3,fill=NA))
+
+
+roll_mean %>%
+  select(c(date, date2, all_incidents:c4)) %>% 
+  pivot_longer(c(all_incidents:c4), names_to="metric", values_to="val") %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(val), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+roll_mean %>%
+  select(c(date, date2, all_incidents_mov_av:c4_mov_av)) %>% 
+  pivot_longer(c(all_incidents_mov_av:c4_mov_av), names_to="metric", values_to="val") %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(val), group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  # # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+prop_incidents<-amb_incidents2 %>% 
+  mutate(all_incidents=as.numeric(all_incidents),
+          c1_prop=as.numeric(c1)/as.numeric(all_incidents),
+         c2_prop=as.numeric(c2)/as.numeric(all_incidents),
+         c3_prop=as.numeric(c3)/as.numeric(all_incidents),
+         c4_prop=as.numeric(c4)/as.numeric(all_incidents))
+
+
+prop_incidents %>% 
+  select(-c(all_incidents, c1t)) %>% 
+  pivot_longer(c1:c4, names_to='metric', values_to='val') %>% 
+  ggplot(.,aes(x=date2, y=as.numeric(val), colour=metric))+
+  geom_area(position=position_fill(reverse=TRUE), fill='white', alpha=0)+
+  # # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  # facet_grid(cols=vars(org_lab))+
+  scale_colour_THF()+
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+coeff=max(prop_incidents$all_incidents)
+ggp1 <- ggplot(prop_incidents) +
+  geom_bar(aes(date2, all_incidents), color="gray69", stat="identity", fill="gray69", alpha=.4) +
+  scale_y_continuous(labels=comma)+
+  xlab("") +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+ggp1
+ggp2 <- ggp1 +
+  geom_line(aes(date2, c1_prop*coeff, group=1), color="red", lwd=0.5, linetype='longdash')
+ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage of C1 incidents (%)")) +
+  geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  theme_THF()
+ggp3
+
+rollmean(prop_incidents$c1_prop,k=12, fill=NA)
+#12 month rolling average suggests that proportion of c1 incidents have usually been below the 10% mark
+#but in the recent year, it has been close or slightly above the 10% mark, 2021 Apr-2022 Mar= 10.13%, 2021 May- 2022 Apr= 10.41% 
+unique(prop_incidents$date2)
+
+#Types
+amb_incidents_type<-amb_incidents %>% 
+  filter(org_code=="Eng") %>% 
+  select(c(year:all_incidents,hear_treat:date)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  select(all_incidents:date2)
+
+prop_incidents_types<-amb_incidents_type %>% 
+mutate(hear_treat=as.numeric(hear_treat),
+       convey_ED=as.numeric(convey_ED),
+       convey_elsewhere=as.numeric(convey_elsewhere),
+       see_treat=as.numeric(see_treat)) %>% 
+mutate(total=hear_treat+convey_ED+convey_elsewhere+see_treat) %>% 
+  mutate(hear_treat_prop=hear_treat/total,
+         convey_ED_prop=convey_ED/total,
+         convey_elsewhere_prop=convey_elsewhere/total,
+         see_treat_prop=see_treat/total)
+
+coeff=max(prop_incidents_types$total)
+ggp1 <- ggplot(prop_incidents_types)+
+  geom_bar(aes(date2, total), color="gray69", stat="identity", fill="gray69", alpha=.4) +
+  scale_y_continuous(labels=comma)+
+  xlab("") +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+ggp1
+ggp2 <- ggp1 +
+  geom_line(aes(date2, convey_ED_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')+
+ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage convey to ED incidents (%)")) +
+  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  theme_THF()
+ggp3
+
+
+
+ggp2 <- ggp1 +
+  geom_line(aes(date2, hear_treat_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')
+ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage hear and treat incidents (%)")) +
+  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  theme_THF()
+ggp3
+
+  
+ggp2 <- ggp1 +
+  geom_line(aes(date2, see_treat_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')
+ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage see and treat incidents (%)")) +
+  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  theme_THF()
+ggp3
+
+ggp2 <- ggp1 +
+  geom_line(aes(date2, convey_elsewhere_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')
+ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage convey elsewhere incidents (%)")) +
+  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  theme_THF()
+ggp3
+
+
+
+
+ggp2 <- ggp1 +
+  geom_line(aes(date2, convey_ED_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')+
+  geom_line(aes(date2, see_treat_prop*coeff, group=1), colour='blue', lwd=0.5, linetype='longdash')+
+  geom_line(aes(date2, hear_treat_prop*coeff, group=1), colour='purple', lwd=0.5, linetype='longdash')+
+  geom_line(aes(date2, convey_elsewhere_prop*coeff, group=1), colour='orange', lwd=0.5, linetype='longdash')
+  ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage incidents (%)")) +
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  labs(caption = "Red= convey to ED, blue= see and treat, purple=hear and treat, orange=convey elsewhere")+
+  theme_THF()
+  ggp3
 
