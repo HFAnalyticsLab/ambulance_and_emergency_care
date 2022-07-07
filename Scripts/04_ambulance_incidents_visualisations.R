@@ -501,3 +501,45 @@ ggp2 <- ggp1 +
   theme_THF()
   ggp3
 
+#rolling counts
+  roll_mean_incidents_types<-amb_incidents_type %>% 
+    mutate(hear_treat_rollmean=rollmean(as.numeric(hear_treat), k=12,fill=NA),
+           convey_ED_rollmean=rollmean(as.numeric(convey_ED), k=12,fill=NA),
+           convey_elsewhere_rollmean=rollmean(as.numeric(convey_elsewhere), k=12,fill=NA),
+           see_treat_rollmean=rollmean(as.numeric(see_treat), k=12,fill=NA)) %>% 
+    drop_na()
+  
+amb_incidents_types_average_plots<-cbind(roll_mean_incidents_types,list_dates,order)
+  
+amb_incidents_types_average_plots<-amb_incidents_types_average_plots %>% 
+    select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+    pivot_longer(c(hear_treat_rollmean:see_treat_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+    mutate(name=fct_reorder(list_dates,order)) 
+  
+  
+amb_incidents_types_average_plots %>% 
+    ggplot(.,aes(x=name, y=counts, group=metric, colour=metric))+
+    geom_line(linetype='solid')+
+    scale_y_continuous(labels=comma)+
+    theme_THF()+
+    # facet_grid(cols=vars(met_cat))+
+    scale_colour_THF()+
+    labs(x = "", y="Incidents counts", caption = "NHS England, Ambulance Quality Indicators")+
+    theme(legend.text=element_text(size=11),
+          legend.title = element_blank(),
+          axis.text.x=element_text(size=8, angle=90), 
+          axis.text.y=element_text(size=11),
+          plot.caption = element_markdown(hjust=0, size=9),
+          plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+          legend.margin=margin(0,0,0,0),
+          legend.box.margin=margin(-10,-10,-10,-10))
+  
+  
+
+calcs<- amb_incidents_types_average_plots %>% 
+    filter(list_dates %in% dates_calcs ) %>% 
+    pivot_wider(id_cols=metric,names_from=list_dates, values_from=counts) %>% 
+    clean_names() %>% 
+    mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
+           per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
+           per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
