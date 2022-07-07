@@ -16,6 +16,7 @@ library(Hmisc)
 library(fpp2)
 library(zoo)
 library(scales)
+library(janitor)
 
 
 
@@ -155,7 +156,7 @@ amb_response_average_plots<-amb_response_average_plots %>%
   mutate(date2=yearmonth(date)) %>% 
   mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>%
   mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>%
-  mutate(resp_time2=as_hms(resp_time2)) %>% 
+  mutate(resp_time2=as_hms(resp_time2)) 
 
 amb_response_average_plots %>%
   mutate(met_group=substr(metric,0,2)) %>% 
@@ -184,6 +185,31 @@ amb_response_average_plots %>%
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
+
+
+v_date<-paste0(yearmonth(format(as.Date(ymd('2018-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2019-04-01'),"%Y-%m-%d"))))
+w_date<-paste0(yearmonth(format(as.Date(ymd('2019-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2020-04-01'),"%Y-%m-%d"))))
+x_date<-paste0(yearmonth(format(as.Date(ymd('2020-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2021-04-01'),"%Y-%m-%d"))))
+y_date<-paste0(yearmonth(format(as.Date(ymd('2021-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2022-04-01'),"%Y-%m-%d"))))
+
+dates_calcs=c(v_date,w_date, x_date, y_date)
+
+calcs<-amb_response_average_plots %>% 
+  filter(list_dates %in% dates_calcs ) %>% 
+  select(-c(resp_time2)) %>% 
+  pivot_wider(id_cols=metric,names_from=list_dates, values_from=resp_time) %>% 
+  clean_names() %>% 
+  mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
+         per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
+         per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
+
+
+#yearly average responses have increased between May 2020-April 2021 and May 2021-April 2022
+#with category 3 experiencing the highest increase
 
 
 
@@ -246,12 +272,10 @@ amb_incidents_average_plots<-cbind(roll_mean_incidents,list_dates,order)
 
 amb_incidents_average_plots<-amb_incidents_average_plots %>% 
   select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
-  pivot_longer(c(c1_rollmean:c4_rollmean), names_to = 'metric', values_to = 'counts') %>% 
-  mutate(met_group=substr(metric,0,2)) %>% 
+  pivot_longer(c(all_incidents_rollmean:c4_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+  mutate(met_group=ifelse(str_detect(metric, "all"), substr(metric, 0,3),substr(metric,0,2))) %>% 
   mutate(met_cat=ifelse(str_detect(metric,'cent'),'90th centile','Mean')) %>% 
   mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
-  mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
-                        ,paste(met_group,"_90th centile (hours:min:sec)"))) %>%
   mutate(name=fct_reorder(list_dates,order)) 
 
 
@@ -260,9 +284,9 @@ amb_incidents_average_plots %>%
   geom_line(linetype='solid')+
   scale_y_continuous(labels=comma)+
   theme_THF()+
-  facet_grid(cols=vars(met_cat))+
+  # facet_grid(cols=vars(met_cat))+
   scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  labs(x = "", y="Incidents counts", caption = "NHS England, Ambulance Quality Indicators")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=90), 
@@ -271,6 +295,36 @@ amb_incidents_average_plots %>%
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+v_date<-paste0(yearmonth(format(as.Date(ymd('2018-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2019-04-01'),"%Y-%m-%d"))))
+w_date<-paste0(yearmonth(format(as.Date(ymd('2019-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2020-04-01'),"%Y-%m-%d"))))
+x_date<-paste0(yearmonth(format(as.Date(ymd('2020-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2021-04-01'),"%Y-%m-%d"))))
+y_date<-paste0(yearmonth(format(as.Date(ymd('2021-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2022-04-01'),"%Y-%m-%d"))))
+
+dates_calcs=c(v_date,w_date, x_date, y_date)
+
+calcs<-amb_incidents_average_plots %>% 
+  filter(list_dates %in% dates_calcs ) %>% 
+  pivot_wider(id_cols=metric,names_from=list_dates, values_from=counts) %>% 
+  clean_names() %>% 
+  mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
+         per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
+         per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
+
+
+
+
+
+
+
+
+  
 
 # A&E attendances ----------------------------------------------------------
 

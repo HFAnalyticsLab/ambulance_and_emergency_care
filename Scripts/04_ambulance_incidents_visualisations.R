@@ -343,6 +343,12 @@ prop_incidents<-amb_incidents2 %>%
          c3_prop=as.numeric(c3)/as.numeric(all_incidents),
          c4_prop=as.numeric(c4)/as.numeric(all_incidents))
 
+buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+
+s3write_using(prop_incidents # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'prop_incidents.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 prop_incidents %>% 
   select(-c(all_incidents, c1t)) %>% 
@@ -385,10 +391,30 @@ ggp3 <- ggp2 +
   theme_THF()
 ggp3
 
-rollmean(prop_incidents$c1_prop,k=12, fill=NA)
-#12 month rolling average suggests that proportion of c1 incidents have usually been below the 10% mark
-#but in the recent year, it has been close or slightly above the 10% mark, 2021 Apr-2022 Mar= 10.13%, 2021 May- 2022 Apr= 10.41% 
-unique(prop_incidents$date2)
+t<-as.data.frame(rollmean(prop_incidents$c1_prop,k=12, fill=NA)) %>% 
+  drop_na()
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+
+
+t<-cbind(t,list_dates)
+
+v_date<-paste0(yearmonth(format(as.Date(ymd('2018-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2019-04-01'),"%Y-%m-%d"))))
+w_date<-paste0(yearmonth(format(as.Date(ymd('2019-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2020-04-01'),"%Y-%m-%d"))))
+x_date<-paste0(yearmonth(format(as.Date(ymd('2020-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2021-04-01'),"%Y-%m-%d"))))
+y_date<-paste0(yearmonth(format(as.Date(ymd('2021-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2022-04-01'),"%Y-%m-%d"))))
+
+dates_calcs=c(v_date,w_date, x_date, y_date)
+
+t %>% 
+  filter(list_dates %in% dates_calcs)
 
 #Types
 amb_incidents_type<-amb_incidents %>% 
