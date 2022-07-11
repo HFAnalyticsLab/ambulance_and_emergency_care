@@ -257,11 +257,11 @@ amb_dta_regions<-amb_dta_regions %>%
 ```{r, echo=FALSE}
 
 
-
 plot<-amb_dta_regions %>%
   filter(org_code=="Eng"& metric=="all_incidents")%>% 
   ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="stack", stat="identity")+
   scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
@@ -289,12 +289,9 @@ ggplotly(plot) %>%
 ```
 
 
+## All incidents (rolling average)
 
-## All incidents and category 1
-
-
-```{r, echo=FALSE, warning=FALSE}
-
+```{r, echo=FALSE}
 
 amb_incidents2<-amb_incidents %>% 
   filter(org_code=="Eng") %>% 
@@ -302,6 +299,69 @@ amb_incidents2<-amb_incidents %>%
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
   select(all_incidents:date2)
+
+
+
+roll_mean_incidents<-amb_incidents2 %>% 
+  mutate(all_incidents_rollmean=rollmean(as.numeric(all_incidents), k=12,fill=NA),
+         c1_rollmean=rollmean(as.numeric(c1), k=12,fill=NA),
+         c2_rollmean=rollmean(as.numeric(c2), k=12,fill=NA),
+         c3_rollmean=rollmean(as.numeric(c3), k=12,fill=NA),
+         c4_rollmean=rollmean(as.numeric(c4), k=12,fill=NA)) %>% 
+  drop_na()
+
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+amb_incidents_average_plots<-cbind(roll_mean_incidents,list_dates,order)
+
+amb_incidents_average_plots<-amb_incidents_average_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+  pivot_longer(c(all_incidents_rollmean:c4_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+  filter(metric=="all_incidents_rollmean") %>% 
+  mutate(met_group= "All incidents") %>% 
+  mutate(name=fct_reorder(list_dates,order)) 
+
+
+plot<-amb_incidents_average_plots %>% 
+  ggplot(.,aes(x=name, y=counts, group=met_group, colour=met_group))+
+  geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
+  theme_THF()+
+  # facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts of incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+
+
+
+## All incidents and category 1
+
+
+```{r, echo=FALSE, warning=FALSE}
 
 
 prop_incidents<-amb_incidents2 %>% 
@@ -331,6 +391,7 @@ ggp3
 
 
 
+
 ## Category 
 
 ```{r, echo=FALSE}
@@ -339,6 +400,7 @@ plot<-amb_dta_regions %>%
   filter(org_code == "Eng"& metric != "all_incidents" ) %>% 
   ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="stack", stat="identity")+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
@@ -446,6 +508,7 @@ plot<-amb_dta_regions_out %>%
   filter(org_code=="Eng"& metric!="all_incidents")%>% 
    ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="fill", stat="identity")+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
@@ -552,6 +615,7 @@ plot<-wf_eng %>%
   geom_line(linetype='solid', colour='#dd0031')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
+  scale_y_continuous(labels=comma)+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
   ggtitle("England")+
   theme(legend.text=element_text(size=11),
@@ -580,6 +644,7 @@ plot<-wf_eng %>%
   ggplot(.,aes(x=date, y=val, group=group, colour=group))+
   geom_point()+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
@@ -621,6 +686,7 @@ plot<-wf_eng_amb %>%
   geom_point(colour='#dd0031')+
   geom_line(linetype='solid', colour='#dd0031')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  scale_y_continuous(labels=comma)+
   theme_THF()+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
   theme(legend.text=element_text(size=11),
@@ -936,6 +1002,7 @@ plot<-amb_dta_plot %>%
   pivot_longer(c(contact_count, calls_answered), names_to="metric", values_to="count") %>% 
   ggplot(.,aes(x=date2, y=count, group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_line(aes(y=calls_answered),linetype='solid', colour="blue")+
   # geom_point(size=0.25)+
   # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
@@ -1094,8 +1161,13 @@ ggplotly(plot) %>%
 ```
 
 
-# Resources 
+# Resources {.tabset}
 
+* Counts of resources assigned to incidents and those that arrived on scene. This includes all trust dispatched resources, private ambulance resources and voluntary ambulance services. 
+
+* Resources can be classed as conveying resource that will transport patients in a time frame appropriate to their clinical needs (usually category 2-4) and/or resources that are appropriate to the patients' needs (if this is on site 'treatment', i.e. trust response vehicle with a health care professional on scene who has access to defibrillator) 
+
+## Resources 
 ```{r, echo=FALSE}
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
 
@@ -1133,6 +1205,7 @@ amb_dta_plot<-amb_incidents %>%
   mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
                                            "Midlands","East of England","London","South East","South West")))
 
+
 plot<-amb_dta_plot %>%
   filter(org_lab=="England") %>%
   pivot_longer(c(mean_alloc, mean_arrive), names_to="metric", values_to="count") %>% 
@@ -1145,7 +1218,7 @@ plot<-amb_dta_plot %>%
   theme_THF()+
   facet_grid(cols=vars(metric))+
   scale_colour_THF()+
-  labs(x = "", y="Mean resources arriving on scene", caption = "NHS England, Ambulance Quality Indicators")+
+  labs(x = "", y="Mean number of resources", caption = "NHS England, Ambulance Quality Indicators")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=60), 
@@ -1162,4 +1235,68 @@ ggplotly(plot) %>%
 
 
 ```
+
+
+## Resourcs (rolling average)
+
+```{r, echo=FALSE}
+
+rolling_count_resource<-amb_dta_plot %>% 
+  filter(org_lab=="England") %>% 
+  dplyr::select(c(date2,date,type,mean_alloc, mean_arrive)) %>% 
+  group_by(type) %>% 
+  mutate(mean_alloc_rollmean=rollmean(mean_alloc, k=12, fill=NA),
+         mean_arrive_rollmean=rollmean(mean_arrive, k=12, fill=NA)) %>% 
+  drop_na() %>% 
+  pivot_wider(id_cols=date2,names_from=type, values_from=c(mean_alloc_rollmean, mean_arrive_rollmean)) 
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+rolling_count_resource<-cbind(rolling_count_resource,list_dates,order)
+
+rolling_count_resource_plot<-rolling_count_resource %>% 
+  select(list_dates, order, contains("rollmean")) %>% 
+  pivot_longer(contains("rollmean"), names_to="metric", values_to="val") %>% 
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  mutate (met_group=ifelse(str_detect(metric, "alloc"), "Mean allocated", "Mean arriving on scene")) %>% 
+  mutate(type=ifelse(str_detect(metric,"c1t"),substr(metric,
+                                                     (str_length(metric)-2),(str_length(metric))),
+                                                     substr(metric,
+                                                            (str_length(metric)-1),(str_length(metric)))))
+
+
+plot<-rolling_count_resource_plot %>%
+  filter(type!="c1t") %>% 
+  ggplot(.,aes(x=name, y=val, group=type, colour=type))+
+  geom_line(linetype='solid')+
+  facet_grid(cols=vars(met_group))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  # scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  scale_colour_THF()+
+  labs(x = "", y="Mean number of resources", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
 
