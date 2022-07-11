@@ -94,3 +94,109 @@ amb_dta_plot %>%
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+amb_dta_plot %>%
+  filter(org_lab=="England") %>%
+  pivot_longer(c(mean_alloc, mean_arrive), names_to="metric", values_to="count") %>% 
+  ggplot(.,aes(x=date2, y=count, group=type, colour=type))+
+  geom_line(linetype='solid')+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  facet_grid(cols=vars(metric))+
+  scale_colour_THF()+
+  labs(x = "", y="Mean resources arriving on scene", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+# Rolling averages --------------------------------------------------------
+
+rolling_count_resource<-amb_dta_plot %>% 
+  filter(org_lab=="England") %>% 
+  dplyr::select(c(date2,date,type,mean_alloc, mean_arrive)) %>% 
+  group_by(type) %>% 
+  mutate(mean_alloc_rollmean=rollmean(mean_alloc, k=12, fill=NA),
+         mean_arrive_rollmean=rollmean(mean_arrive, k=12, fill=NA)) %>% 
+  drop_na() %>% 
+  pivot_wider(id_cols=date2,names_from=type, values_from=c(mean_alloc_rollmean, mean_arrive_rollmean)) 
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+rolling_count_resource<-cbind(rolling_count_resource,list_dates,order)
+
+rolling_count_resource_plot<-rolling_count_resorce %>% 
+  select(list_dates, order, contains("rollmean")) %>% 
+  pivot_longer(contains("rollmean"), names_to="metric", values_to="val") %>% 
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  mutate (met_group=ifelse(str_detect(metric, "alloc"), "alloc", "arrive")) %>% 
+  mutate(type=ifelse(str_detect(metric,"c1t"),substr(metric,
+                                                     (str_length(metric)-2),(str_length(metric))),
+                                                     substr(metric,
+                                                            (str_length(metric)-1),(str_length(metric)))))
+
+
+rolling_count_resource_plot %>%
+  filter(type!="c1t") %>% 
+  ggplot(.,aes(x=name, y=val, group=type, colour=type))+
+  geom_point()+
+  geom_line(linetype='solid')+
+  facet_grid(cols=vars(met_group))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  # scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  scale_colour_THF()+
+  labs(x = "", y="Mean number of resources", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+v_date<-paste0(yearmonth(format(as.Date(ymd('2018-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2019-04-01'),"%Y-%m-%d"))))
+w_date<-paste0(yearmonth(format(as.Date(ymd('2019-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2020-04-01'),"%Y-%m-%d"))))
+x_date<-paste0(yearmonth(format(as.Date(ymd('2020-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2021-04-01'),"%Y-%m-%d"))))
+y_date<-paste0(yearmonth(format(as.Date(ymd('2021-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2022-04-01'),"%Y-%m-%d"))))
+
+dates_calcs=c(v_date,w_date, x_date, y_date)
+
+calcs_alloc<-rolling_count_resource_plot %>% 
+  filter(list_dates %in% dates_calcs & met_group=="alloc") %>% 
+  pivot_wider(id_cols=type,names_from=list_dates, values_from=val) %>% 
+  clean_names() %>% 
+  mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
+         per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
+         per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
+
+calcs_arrive<-rolling_count_resource_plot %>% 
+  filter(list_dates %in% dates_calcs & met_group=="arrive") %>% 
+  pivot_wider(id_cols=type,names_from=list_dates, values_from=val) %>% 
+  clean_names() %>% 
+  mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
+         per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
+         per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
+
+
+
