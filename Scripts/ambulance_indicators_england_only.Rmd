@@ -90,7 +90,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
     filter(org_lab==!!aaa) %>%
       mutate(met_group=substr(metric,0,3)) %>% 
   mutate(met_cat=ifelse(str_detect(metric,'mean'),'Mean','90th centile')) %>% 
-  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean','90th centile'))) %>% 
   mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
                         ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
   ggplot(.,aes(x=date2, y=resp_time2, group=met_group, colour=met_group))+
@@ -103,7 +103,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   theme_THF()+
   facet_grid(cols=vars(met_cat))+
   scale_colour_THF()+
-    labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+    labs(x = "", y="Response time (hours:minutes)", caption = "NHS England, Ambulance Quality Indicators")+
     ggtitle(var.x)+
     theme(legend.text=element_text(size=11),
           legend.title = element_blank(),
@@ -202,7 +202,7 @@ plot<-amb_response_average_plots %>%
   theme_THF()+
   facet_grid(cols=vars(met_cat))+
   scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  labs(x = "", y="Response time (hours:mins:secs)", caption = "NHS England, Ambulance Quality Indicators")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=90), 
@@ -1299,4 +1299,87 @@ ggplotly(plot) %>%
 
 ```
 
+
+# A&E metrics {.tabset}
+
+## A&E attendances (rolling average)
+
+```{r, echo=FALSE}
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+aeattend<-s3read_using(readRDS # Which function are we using to read
+                       , object = 'aeattend.rds' # File to open
+                       , bucket = buck) # Bucket name defined above
+
+aeattend <- aeattend %>%
+  mutate(time=paste0(year, formatC(month, width=2, flag="0"))) %>%
+  mutate(pct4to12hrsadmit=ifelse(totaladmit==0, 0, pct4to12hrsadmit )) %>%
+  mutate(pct12plushrsadmit=ifelse(totaladmit==0, 0, pct12plushrsadmit )) 
+
+summattend <- aeattend %>%
+  drop_na(totalattend) %>%
+  drop_na(`Number of A&E attendances Type 1`) %>%
+  group_by(time) %>%
+  summarise(meanattend=mean(totalattend), meantype1=mean(`Number of A&E attendances Type 1`),
+            meantype2=mean(`Number of A&E attendances Type 2`), meantypeoth=mean(`Number of A&E attendances Other A&E Department`), n=n())
+
+summattend<-summattend %>% 
+  mutate(date=paste0(substr(time,0,4),"-",substr(time,5,6),"-01")) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_name="England")
+
+
+roll_mean_ae_attend<-summattend %>% 
+  mutate(meanattend_rollmean=rollmean(meanattend, k=12,fill=NA),
+         meantype1_rollmean=rollmean(meantype1, k=12,fill=NA),
+         meantype2_rollmean=rollmean(meantype2, k=12,fill=NA),
+         meantypeoth_rollmean=rollmean(meantypeoth, k=12,fill=NA)) %>% 
+  drop_na()
+ 
+
+start_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2021-04-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2019-03-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:37)
+
+ae_attend_plots<-cbind(roll_mean_ae_attend,list_dates,order)
+
+ae_attend_plots<-ae_attend_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean")))%>% 
+  pivot_longer(c(meanattend_rollmean:meantypeoth_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  mutate(met_lab=case_when(str_detect(metric, "meanattend")~ "Total attendances",
+                           str_detect(metric, "type1")~ "Type 1 attendaces",
+                           str_detect(metric, "type2")~ "Type 2 attendances",
+                           str_detect(metric, "oth")~ "Total other attendances"))
+
+plot<-ae_attend_plots %>% 
+  ggplot(.,aes(x=name, y=counts, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
+  theme_THF()+
+  # facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Number of attendances", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
 
