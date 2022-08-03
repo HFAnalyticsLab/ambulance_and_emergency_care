@@ -18,7 +18,7 @@ amb_dta_clean<-amb_dta %>%
 
 #by trust 
 list_org_codes_trust<-c("RX9", "RYC", "R1F", "RRU", "RX6", "RX7", "RYE", "RYD", "RYF", "RYA", "RX8") 
-#some data is no complete
+#some data is not complete
 
 #by region
 list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
