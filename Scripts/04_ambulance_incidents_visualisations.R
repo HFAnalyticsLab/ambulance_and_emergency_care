@@ -12,6 +12,8 @@ library(THFstyle)
 library(fpp2)
 library(zoo)
 library(scales)
+library(ggtext)
+library(plotly)
 
 
 rm(list=ls())
@@ -40,7 +42,6 @@ amb_dta_plot<-amb_dta_plot %>%
   mutate(date2=yearmonth(date)) %>% 
   mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
                                            "Midlands","East of England","London","South East","South West")))
-
 
 
 amb_dta_plot %>%
@@ -87,7 +88,6 @@ plot<-amb_dta_plot %>%
 ggplotly(plot) %>% 
   layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
   layout(legend=list(title=list(text=''))) 
-
 
 # Trusts ------------------------------------------------------------------
 
@@ -343,12 +343,14 @@ prop_incidents<-amb_incidents2 %>%
          c3_prop=as.numeric(c3)/as.numeric(all_incidents),
          c4_prop=as.numeric(c4)/as.numeric(all_incidents))
 
-buck <- 'thf-dap-tier0-projects-iht-067208b7-resultsbucket-zzn273xwd1pg/ambulance' ## my bucket name
+#### save R objects from the environment directly to your s3 bucket
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
 
 s3write_using(prop_incidents # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'prop_incidents.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
+
 
 prop_incidents %>% 
   select(-c(all_incidents, c1t)) %>% 
@@ -543,3 +545,9 @@ calcs<- amb_incidents_types_average_plots %>%
     mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
            per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
            per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
+
+
+
+
+
+
