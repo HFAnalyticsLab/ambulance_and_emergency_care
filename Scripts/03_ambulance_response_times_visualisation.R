@@ -41,7 +41,6 @@ amb_dta_plot<-amb_dta_plot %>%
   mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
                                               "Midlands","East of England","London","South East","South West")))
 
-
 # 
 # amb_ts_plot= as_tsibble(amb_ts_plot,
 #                         index= date,
@@ -392,5 +391,73 @@ ggplotly(c4) %>%
 
 trends_graph(var.x=label_names[4])
 
+
+
+
+# Data for flourish -------------------------------------------------------
+
+amb_dta_mean<-amb_dta %>% 
+  select(c(org_code:org_name, "date", contains("mean"))) %>% 
+  mutate(type="Mean")
+
+names(amb_dta_mean)[4:8]<-c("c1", "c1t", "c2", "c3", "c4")
+
+
+amb_dta_90th<-amb_dta %>% 
+  select(c(org_code:org_name, "date", contains("90thcent"))) %>% 
+  mutate(type="90th percentile")
+  
+names(amb_dta_90th)[4:8]<-c("c1", "c1t", "c2", "c3", "c4")
+
+
+amb_dta_flourish<-rbind(amb_dta_mean, amb_dta_90th)
+
+amb_dta_flourish<-amb_dta_flourish %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West"))) %>% 
+  mutate(c1=as.POSIXct(as.numeric(c1),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c1=format(c1, format="%H:%M:%S")) %>% 
+  mutate(c1=as_hms(c1)) %>% 
+  mutate(c2=as.POSIXct(as.numeric(c2),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c2=format(c2, format="%H:%M:%S")) %>% 
+  mutate(c2=as_hms(c2)) %>% 
+  mutate(c3=as.POSIXct(as.numeric(c3),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c3=format(c3, format="%H:%M:%S")) %>% 
+  mutate(c3=as_hms(c3)) %>% 
+  mutate(c4=as.POSIXct(as.numeric(c4),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c4=format(c4, format="%H:%M:%S")) %>% 
+  mutate(c4=as_hms(c4)) 
+
+
+write.csv(amb_dta_flourish, "amb_dta_flourish.csv")
+
+#### save R objects from the environment directly to your s3 bucket
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
+
+s3write_using(amb_dta_flourish # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amb_resptimes.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
+amb_dta_plot_eng<-amb_dta_plot %>% 
+  filter(org_lab=="England")
+
+
+s3write_using(amb_dta_plot_eng # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amb_resptimes_eng.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
+
+amb_dta_plot_regions<-amb_dta_plot %>% 
+  filter(org_lab!="England")
+
+
+s3write_using(amb_dta_plot_regions # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amb_resptimes_regions.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
 
 
