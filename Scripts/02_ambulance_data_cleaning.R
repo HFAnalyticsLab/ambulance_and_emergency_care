@@ -63,11 +63,11 @@ s3write_using(amb_dta_trusts # What R object we are saving
 #select relevant columns 
 amb_dta_clean<-amb_dta %>% 
   clean_names() %>% 
-  select(year:org_name, paste0("a",c(7:12, 17, 53:55)))
+  select(year:org_name, paste0("a",c(8:12, 17, 53:56)))
 
 
-names(amb_dta_clean)[6:11]<-c("all_incidents", "c1", "c1t", "c2", "c3", "c4")
-names(amb_dta_clean)[12:15]<-c("hear_treat", "convey_ED", "convey_elsewhere", "see_treat" )
+names(amb_dta_clean)[6:10]<-c("c1", "c1t", "c2", "c3", "c4")
+names(amb_dta_clean)[11:14]<-c("hear_treat", "convey_ED", "convey_elsewhere", "see_treat")
 
 amb_incidents<-amb_dta_clean %>% 
   mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
