@@ -344,26 +344,26 @@ roll_mean %>%
 
 
 prop_incidents<-amb_incidents2 %>% 
-  mutate(c1_prop=as.numeric(c1)/as.numeric(total_cat),
-         c2_prop=as.numeric(c2)/as.numeric(total_cat),
-         c3_prop=as.numeric(c3)/as.numeric(total_cat),
-         c4_prop=as.numeric(c4)/as.numeric(total_cat))
+  mutate(c1_prop=(as.numeric(c1)/as.numeric(total_cat)*100),
+         c2_prop=(as.numeric(c2)/as.numeric(total_cat)*100),
+         c3_prop=(as.numeric(c3)/as.numeric(total_cat)*100),
+         c4_prop=(as.numeric(c4)/as.numeric(total_cat)*100))
 
 
 prop_incidents_v1<-prop_incidents %>% 
   select(date, date2, c1_prop:c4_prop) %>% 
-  mutate(grid="Proportions")
+  mutate(grid="Proportion of C1-C4 incidents (%)")
 
 
 prop_incidents_v2<-prop_incidents %>% 
   select(date, date2, all_incidents) %>% 
-  mutate(grid="Total")
+  mutate(grid="Total number of incidents")
 
 
-incidents_flourish<-prop_incidents_v1 %>% 
-  full_join(prop_incidents_v2)
+incidents_flourish<-prop_incidents_v2 %>% 
+  full_join(prop_incidents_v1)
 
-write.csv(prop_incidents, "incidents_flourish_props.csv")
+write.csv(incidents_flourish, "incidents_flourish_try.csv")
 
 #### save R objects from the environment directly to your s3 bucket
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
