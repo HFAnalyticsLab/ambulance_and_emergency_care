@@ -287,8 +287,8 @@ amb_incidents2<-amb_incidents %>%
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
   select(all_incidents:date2) %>% 
-  mutate(c1=as.numeric(c1), c2=as.numeric(c2), c3=as.numeric(c3), c4=as.numeric(c4)) %>% 
   mutate(total_cat=c1+c2+c3+c4)
+
 
 
 roll_mean<-amb_incidents2 %>% 
@@ -344,28 +344,26 @@ roll_mean %>%
 
 
 prop_incidents<-amb_incidents2 %>% 
-  mutate(all_incidents=as.numeric(all_incidents),
-          c1_prop=as.numeric(c1)/as.numeric(all_incidents),
-         c2_prop=as.numeric(c2)/as.numeric(all_incidents),
-         c3_prop=as.numeric(c3)/as.numeric(all_incidents),
-         c4_prop=as.numeric(c4)/as.numeric(all_incidents))
-
+  mutate(c1_prop=as.numeric(c1)/as.numeric(total_cat),
+         c2_prop=as.numeric(c2)/as.numeric(total_cat),
+         c3_prop=as.numeric(c3)/as.numeric(total_cat),
+         c4_prop=as.numeric(c4)/as.numeric(total_cat))
 
 
 prop_incidents_v1<-prop_incidents %>% 
-  select(date, date2, c1, c2:c4) %>% 
-  mutate(grid="breakdown")
+  select(date, date2, c1_prop:c4_prop) %>% 
+  mutate(grid="Proportions")
 
 
 prop_incidents_v2<-prop_incidents %>% 
-  select(date, date2, all_incidents, c1_prop) %>% 
-  mutate(grid="overall")
+  select(date, date2, all_incidents) %>% 
+  mutate(grid="Total")
 
 
 incidents_flourish<-prop_incidents_v1 %>% 
   full_join(prop_incidents_v2)
 
-write.csv(incidents_flourish, "incidents_flourish.csv")
+write.csv(prop_incidents, "incidents_flourish_props.csv")
 
 #### save R objects from the environment directly to your s3 bucket
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
