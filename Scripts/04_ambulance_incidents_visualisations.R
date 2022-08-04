@@ -29,6 +29,11 @@ amb_incidents<-s3read_using(read.csv # Which function are we using to read
                       , bucket = buck) # Bucket name defined above
 
 
+
+# Make variables numeric --------------------------------------------------
+
+amb_incidents[7:16] = lapply(amb_incidents[7:16], FUN = function(y){as.numeric(y)})
+
 # Regions-------------------------------------------------------------------------
 
 list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
@@ -281,7 +286,9 @@ amb_incidents2<-amb_incidents %>%
   select(c(year:c4,date)) %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
-  select(all_incidents:date2)
+  select(all_incidents:date2) %>% 
+  mutate(c1=as.numeric(c1), c2=as.numeric(c2), c3=as.numeric(c3), c4=as.numeric(c4)) %>% 
+  mutate(total_cat=c1+c2+c3+c4)
 
 
 roll_mean<-amb_incidents2 %>% 
@@ -342,6 +349,23 @@ prop_incidents<-amb_incidents2 %>%
          c2_prop=as.numeric(c2)/as.numeric(all_incidents),
          c3_prop=as.numeric(c3)/as.numeric(all_incidents),
          c4_prop=as.numeric(c4)/as.numeric(all_incidents))
+
+
+
+prop_incidents_v1<-prop_incidents %>% 
+  select(date, date2, c1, c2:c4) %>% 
+  mutate(grid="breakdown")
+
+
+prop_incidents_v2<-prop_incidents %>% 
+  select(date, date2, all_incidents, c1_prop) %>% 
+  mutate(grid="overall")
+
+
+incidents_flourish<-prop_incidents_v1 %>% 
+  full_join(prop_incidents_v2)
+
+write.csv(incidents_flourish, "incidents_flourish.csv")
 
 #### save R objects from the environment directly to your s3 bucket
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
