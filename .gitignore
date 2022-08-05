@@ -42,6 +42,7 @@ vignettes/*.pdf
 # Folders
 /outputs
 /data
+/Scripts/rsconnect
 
 #specific data files 
 *.Rds
