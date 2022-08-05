@@ -8,11 +8,11 @@ library(ggplot2)
 library(hms)
 library(tidyverse)
 library(THFstyle)
+library(tsibble)
 
 
 rm(list=ls())
 
-# Category x Regions -----------------------------------------------------------------
 
 
 
@@ -24,6 +24,9 @@ buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance
 amb_dta<-s3read_using(read.csv # Which function are we using to read
                    , object = 'amb_RT_regions.csv' # File to open
                    , bucket = buck) # Bucket name defined above
+
+# Category x Regions -----------------------------------------------------------------
+
 
 #reformat for plots
 # vars<-c(paste0("c1_",c("mean", "90thcent")),c(paste0("c1T_",c("mean", "90thcent"))),
@@ -430,6 +433,13 @@ amb_dta_flourish<-amb_dta_flourish %>%
   mutate(c4=as_hms(c4)) 
 
 
+amb_dta_try<-amb_dta_flourish %>% 
+  mutate(c1=as.character(c1),
+         c2=as.character(c2),
+         c3=as.character(c3), 
+         c4=as.character(c4))
+
+
 write.csv(amb_dta_flourish, "amb_dta_flourish.csv")
 
 #### save R objects from the environment directly to your s3 bucket
@@ -461,3 +471,44 @@ s3write_using(amb_dta_plot_regions # What R object we are saving
               , bucket = buck) # Bucket name defined above
 
 
+
+#calculations
+
+pre_dates<-format(as.Date(seq(ymd('2018-03-01'),ymd('2019-06-01'),by='1 month')),"%Y-%m-%d")
+p_dates<-format(as.Date(seq(ymd('2020-03-01'),ymd('2021-06-01'),by='1 month')),"%Y-%m-%d")
+post_dates<-format(as.Date(seq(ymd('2021-07-01'),ymd('2022-06-01'),by='1 month')),"%Y-%m-%d")
+
+
+pre<-amb_dta %>% 
+  filter(date %in% pre_dates & region=="Eng") %>% 
+  select(org_name:date) %>% 
+  pivot_longer(c1_mean:c4_90thcent, names_to="metric", values_to="resp_time") %>% 
+  mutate(resp_time=as.numeric(resp_time)) %>% 
+  group_by(metric) %>% 
+  summarise(mean_resp_time=mean(resp_time)) %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(mean_resp_time),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  mutate(resp_time2=as_hms(resp_time2))
+
+  
+pandemic<-amb_dta %>% 
+  filter(date %in% p_dates & region=="Eng") %>% 
+  select(org_name:date) %>% 
+  pivot_longer(c1_mean:c4_90thcent, names_to="metric", values_to="resp_time") %>% 
+  mutate(resp_time=as.numeric(resp_time)) %>% 
+  group_by(metric) %>% 
+  summarise(mean_resp_time=mean(resp_time)) %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(mean_resp_time),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  mutate(resp_time2=as_hms(resp_time2))
+
+post<-amb_dta %>% 
+  filter(date %in% post_dates & region=="Eng") %>% 
+  select(org_name:date) %>% 
+  pivot_longer(c1_mean:c4_90thcent, names_to="metric", values_to="resp_time") %>% 
+  mutate(resp_time=as.numeric(resp_time)) %>% 
+  group_by(metric) %>% 
+  summarise(mean_resp_time=mean(resp_time)) %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(mean_resp_time),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  mutate(resp_time2=as_hms(resp_time2))
