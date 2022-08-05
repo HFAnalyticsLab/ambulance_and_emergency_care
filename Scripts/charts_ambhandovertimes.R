@@ -27,7 +27,10 @@ summamb <- amball %>%
   group_by(date2) %>%
   mutate(mean60plus=mean(pctdelay60plus), mean3060=mean(pctdelay3060), n=n()) %>% 
   select(c(start_week,date2, year,mean60plus,mean3060,n)) %>% 
-  distinct()
+  distinct() %>% 
+  mutate(week=str_sub(date2,6,8)) %>% 
+  mutate(start_week=format(start_week, "%d-%b-%Y"))
+
 
 
 # 
