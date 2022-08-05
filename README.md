@@ -6,7 +6,7 @@
 
 [NHS pathways triage data](https://digital.nhs.uk/services/nhs-pathways/nhs-pathways-service-information/monthly-triage-data/999-nhs-pathways-monthly-triage-data---april-2022)  
 
-[NHS ambulance handover data](https://www.england.nhs.uk/statistics/statistical-work-areas/uec-sitrep/urgent-and-emergency-care-daily-situation-reports-2020-21/) 
+[NHS ambulance handover data](https://www.england.nhs.uk/statistics/statistical-work-areas/uec-sitrep/) 
 N.B. Only available during winter
 
 [NHS workforce statistic](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-workforce-statistics/january-2021) 
