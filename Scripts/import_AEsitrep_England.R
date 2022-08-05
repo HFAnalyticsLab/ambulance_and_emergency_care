@@ -1,10 +1,11 @@
 
 library(aws.s3)
-library("readxl")
+library(readxl)
 library(tidyverse)
 library(lubridate)
+library(stringr)
 
-ambdelay <- read_excel("Data/2017handovers.xlsx")
+ambdelay <- read_excel("data/2017handovers.xlsx")
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -35,12 +36,14 @@ amball201718 <- amball %>%
   mutate(pctdelay60plus=numdelays60plus*100/denom) %>%
   mutate(pctdelay60plus=na_if(pctdelay60plus, Inf)) %>%
   mutate(pctdelay3060=numdelays3060*100/denom) %>%
-  mutate(pctdelay3060=na_if(pctdelay3060, Inf))
+  mutate(pctdelay3060=na_if(pctdelay3060, Inf)) %>% 
+  mutate(date2=date2ISOweek(date)) %>% 
+  mutate(date2=str_sub(date2,0,8))
 
 saveRDS(amball201718, file="amball201718.rds")
 
 
-ambdelay <- read_excel("Data/2018handovers.xlsx")
+ambdelay <- read_excel("data/2018handovers.xlsx")
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -70,12 +73,15 @@ amball201819 <- amball %>%
   mutate(pctdelay60plus=numdelays60plus*100/denom) %>%
   mutate(pctdelay60plus=na_if(pctdelay60plus, Inf)) %>%
   mutate(pctdelay3060=numdelays3060*100/denom) %>%
-  mutate(pctdelay3060=na_if(pctdelay3060, Inf))
+  mutate(pctdelay3060=na_if(pctdelay3060, Inf)) %>% 
+  mutate(date2=date2ISOweek(date)) %>% 
+  mutate(date2=str_sub(date2,0,8))
+
 
 saveRDS(amball201819, file="amball201819.rds")
 
 
-ambdelay <- read_excel("Data/2019handovers.xlsx")
+ambdelay <- read_excel("data/2019handovers.xlsx")
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -105,11 +111,14 @@ amball201920 <- amball %>%
   mutate(pctdelay60plus=numdelays60plus*100/denom) %>%
   mutate(pctdelay60plus=na_if(pctdelay60plus, Inf)) %>%
   mutate(pctdelay3060=numdelays3060*100/denom) %>%
-  mutate(pctdelay3060=na_if(pctdelay3060, Inf))
+  mutate(pctdelay3060=na_if(pctdelay3060, Inf)) %>% 
+  mutate(date2=date2ISOweek(date)) %>% 
+  mutate(date2=str_sub(date2,0,8))
+
 
 saveRDS(amball201920, file="amball201920.rds")
 
-ambdelay <- read_excel("Data/2020handovers.xlsx")
+ambdelay <- read_excel("data/2020handovers.xlsx")
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -139,11 +148,14 @@ amball202021 <- amball %>%
   mutate(pctdelay60plus=numdelays60plus*100/denom) %>%
   mutate(pctdelay60plus=na_if(pctdelay60plus, Inf)) %>%
   mutate(pctdelay3060=numdelays3060*100/denom) %>%
-  mutate(pctdelay3060=na_if(pctdelay3060, Inf))
+  mutate(pctdelay3060=na_if(pctdelay3060, Inf)) %>% 
+  mutate(date2=date2ISOweek(date)) %>% 
+  mutate(date2=str_sub(date2,0,8))
+
 
 saveRDS(amball202021, file="amball202021.rds")
 
-ambdelay <- read_excel("Data/2021handovers.xlsx")
+ambdelay <- read_excel("data/2021handovers.xlsx")
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -173,7 +185,10 @@ amball202122 <- amball %>%
   mutate(pctdelay60plus=numdelays60plus*100/denom) %>%
   mutate(pctdelay60plus=na_if(pctdelay60plus, Inf)) %>%
   mutate(pctdelay3060=numdelays3060*100/denom) %>%
-  mutate(pctdelay3060=na_if(pctdelay3060, Inf))
+  mutate(pctdelay3060=na_if(pctdelay3060, Inf)) %>% 
+  mutate(date2=date2ISOweek(date)) %>% 
+  mutate(date2=str_sub(date2,0,8))
+
 
 saveRDS(amball202122, file="amball202122.rds")
 
