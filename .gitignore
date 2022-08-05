@@ -4,7 +4,7 @@
 
 # Session Data files
 .RData
-.html
+*.html
 
 # User-specific files
 .Ruserdata
@@ -44,4 +44,6 @@ vignettes/*.pdf
 /data
 
 #specific data files 
-.Rds
+*.Rds
+*.rds
+*.csv
