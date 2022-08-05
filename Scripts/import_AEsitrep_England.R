@@ -5,7 +5,10 @@ library(tidyverse)
 library(lubridate)
 library(stringr)
 
-ambdelay <- read_excel("data/2017handovers.xlsx")
+
+x2017handovers<-read_excel("data/raw2017handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:LH16")
+
+ambdelay <- x2017handovers
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -43,7 +46,11 @@ amball201718 <- amball %>%
 saveRDS(amball201718, file="amball201718.rds")
 
 
-ambdelay <- read_excel("data/2018handovers.xlsx")
+
+x2018handovers<-read_excel("data/raw2018handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:JR16")
+
+ambdelay<-x2018handovers
+
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -81,7 +88,9 @@ amball201819 <- amball %>%
 saveRDS(amball201819, file="amball201819.rds")
 
 
-ambdelay <- read_excel("data/2019handovers.xlsx")
+x2019handovers<-read_excel("data/raw2019handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:JR16")
+
+ambdelay <- x2019handovers
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -118,7 +127,11 @@ amball201920 <- amball %>%
 
 saveRDS(amball201920, file="amball201920.rds")
 
-ambdelay <- read_excel("data/2020handovers.xlsx")
+
+
+x2020handovers<-read_excel("data/raw2020handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:NS17")
+
+ambdelay<-x2020handovers[2,]
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -154,6 +167,10 @@ amball202021 <- amball %>%
 
 
 saveRDS(amball202021, file="amball202021.rds")
+
+x2021handovers<-read_excel("data/raw2021handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:NS17")
+
+ambdelay2<-x2021handovers[2,]
 
 ambdelay <- read_excel("data/2021handovers.xlsx")
 
