@@ -13,9 +13,14 @@ library(lubridate)
 library(ggpubr)
 library(tsibble)
 library(Hmisc)
+library(fpp2)
+library(zoo)
+library(scales)
+library(janitor)
 
 
-#Methodology: https://www.r-bloggers.com/2020/03/testing-the-correlation-between-time-series-variables/
+
+#Methodology for correlations: https://www.r-bloggers.com/2020/03/testing-the-correlation-between-time-series-variables/
 
 
 #functions
@@ -56,7 +61,7 @@ buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance
 
 
 #ambulance indicators 
-amb_response<-s3read_using(read.csv # Which function are we using to read
+amb_response_raw<-s3read_using(read.csv # Which function are we using to read
                       , object = 'amb_RT_regions.csv' # File to open
                       , bucket = buck) # Bucket name defined above
 
@@ -94,12 +99,15 @@ sick_ab<-s3read_using(read.csv # Which function are we using to read
 
 # Response Times  ----------------------------------------------------------
 
-amb_response<-amb_response %>% 
+amb_response<-amb_response_raw %>% 
   filter(org_code=="Eng") %>% 
   pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time') %>% 
   mutate(resp_time=as.numeric(resp_time)) %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
+  # mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
+  # mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  # mutate(resp_time2=as_hms(resp_time2)) %>% 
   pivot_wider(c("org_name", "date", "date2"),names_from=  metric, values_from = resp_time)
 
 
@@ -117,6 +125,93 @@ s3write_using(t # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'response_times_corr.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
+
+
+# Rolling averages --------------------------------------------------------
+
+amb_response_average<-amb_response %>% 
+  mutate(c1_mean_rollmean=rollmean(c1_mean, k=12,fill=NA),
+         c2_mean_rollmean=rollmean(c2_mean, k=12,fill=NA),
+         c3_mean_rollmean=rollmean(c3_mean, k=12,fill=NA),
+         c4_mean_rollmean=rollmean(c4_mean, k=12,fill=NA),
+         c1_90thcent_rollmean=rollmean(c1_90thcent, k=12,fill=NA),
+         c2_90thcent_rollmean=rollmean(c2_90thcent, k=12,fill=NA),
+         c3_90thcent_rollmean=rollmean(c3_90thcent, k=12,fill=NA),
+         c4_90thcent_rollmean=rollmean(c4_90thcent, k=12,fill=NA)) %>% 
+  drop_na()
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+amb_response_average_plots<-cbind(amb_response_average,list_dates,order)
+
+amb_response_average_plots<-amb_response_average_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+  pivot_longer(c(c1_mean_rollmean:c4_90thcent_rollmean), names_to = 'metric', values_to = 'resp_time') %>% 
+  mutate(resp_time=as.numeric(resp_time)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>%
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>%
+  mutate(resp_time2=as_hms(resp_time2)) 
+
+amb_response_average_plots %>%
+  mutate(met_group=substr(metric,0,2)) %>% 
+  mutate(met_cat=ifelse(str_detect(metric,'cent'),'90th centile','Mean')) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
+                        ,paste(met_group,"_90th centile (hours:min:sec)"))) %>%
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  ggplot(.,aes(x=name, y=resp_time2, group=met_group, colour=met_group))+
+  geom_line(aes(linetype=met_cat))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  # scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  # scale_y_time(limits = as_hms(c(0,72000)), breaks = as_hms(seq(0, 72000, by = 7200)))+
+  scale_y_time(breaks = as_hms(seq(0, 72000, by = 1800)))+
+  theme_THF()+
+  facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+v_date<-paste0(yearmonth(format(as.Date(ymd('2018-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2019-04-01'),"%Y-%m-%d"))))
+w_date<-paste0(yearmonth(format(as.Date(ymd('2019-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2020-04-01'),"%Y-%m-%d"))))
+x_date<-paste0(yearmonth(format(as.Date(ymd('2020-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2021-04-01'),"%Y-%m-%d"))))
+y_date<-paste0(yearmonth(format(as.Date(ymd('2021-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2022-04-01'),"%Y-%m-%d"))))
+
+dates_calcs=c(v_date,w_date, x_date, y_date)
+
+calcs<-amb_response_average_plots %>% 
+  filter(list_dates %in% dates_calcs ) %>% 
+  select(-c(resp_time2)) %>% 
+  pivot_wider(id_cols=metric,names_from=list_dates, values_from=resp_time) %>% 
+  clean_names() %>% 
+  mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
+         per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
+         per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
+
+
+#yearly average responses have increased between May 2020-April 2021 and May 2021-April 2022
+#with category 3 experiencing the highest increase
+
+
 
 # Incidents ---------------------------------------------------------------
 
@@ -154,6 +249,82 @@ s3write_using(t # What R object we are saving
               , bucket = buck) # Bucket name defined above
 
 
+
+
+# Rolling averages --------------------------------------------------------
+
+roll_mean_incidents<-amb_incidents %>% 
+  mutate(all_incidents_rollmean=rollmean(as.numeric(all_incidents), k=12,fill=NA),
+         c1_rollmean=rollmean(as.numeric(c1), k=12,fill=NA),
+         c2_rollmean=rollmean(as.numeric(c2), k=12,fill=NA),
+         c3_rollmean=rollmean(as.numeric(c3), k=12,fill=NA),
+         c4_rollmean=rollmean(as.numeric(c4), k=12,fill=NA)) %>% 
+  drop_na()
+
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+amb_incidents_average_plots<-cbind(roll_mean_incidents,list_dates,order)
+
+amb_incidents_average_plots<-amb_incidents_average_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+  pivot_longer(c(all_incidents_rollmean:c4_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+  mutate(met_group=ifelse(str_detect(metric, "all"), substr(metric, 0,3),substr(metric,0,2))) %>% 
+  mutate(met_cat=ifelse(str_detect(metric,'cent'),'90th centile','Mean')) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(name=fct_reorder(list_dates,order)) 
+
+
+amb_incidents_average_plots %>% 
+  ggplot(.,aes(x=name, y=counts, group=met_group, colour=met_group))+
+  geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
+  theme_THF()+
+  # facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Incidents counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+v_date<-paste0(yearmonth(format(as.Date(ymd('2018-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2019-04-01'),"%Y-%m-%d"))))
+w_date<-paste0(yearmonth(format(as.Date(ymd('2019-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2020-04-01'),"%Y-%m-%d"))))
+x_date<-paste0(yearmonth(format(as.Date(ymd('2020-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2021-04-01'),"%Y-%m-%d"))))
+y_date<-paste0(yearmonth(format(as.Date(ymd('2021-05-01'),"%Y-%m-%d"))),"-",
+               yearmonth(format(as.Date(ymd('2022-04-01'),"%Y-%m-%d"))))
+
+dates_calcs=c(v_date,w_date, x_date, y_date)
+
+calcs<-amb_incidents_average_plots %>% 
+  filter(list_dates %in% dates_calcs ) %>% 
+  pivot_wider(id_cols=metric,names_from=list_dates, values_from=counts) %>% 
+  clean_names() %>% 
+  mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
+         per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
+         per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
+
+
+
+
+
+
+
+
+  
 
 # A&E attendances ----------------------------------------------------------
 

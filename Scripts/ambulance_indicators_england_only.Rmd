@@ -23,6 +23,10 @@ library(THFstyle)
 library(plotly)
 library(tsibble)
 library(knitr)
+library(scales)
+library(fpp2)
+library(zoo)
+library(forcats)
 
 ```
 
@@ -32,7 +36,7 @@ Data obtained from [NHS England, Ambulance Quality Indicators](https://www.engla
 
 # Ambulance Reponse Times 
 
-## Response Times
+## Response Times {.tabset}
 
 ```{r load, echo=FALSE}
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
@@ -86,7 +90,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
     filter(org_lab==!!aaa) %>%
       mutate(met_group=substr(metric,0,3)) %>% 
   mutate(met_cat=ifelse(str_detect(metric,'mean'),'Mean','90th centile')) %>% 
-  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean','90th centile'))) %>% 
   mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
                         ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
   ggplot(.,aes(x=date2, y=resp_time2, group=met_group, colour=met_group))+
@@ -99,7 +103,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   theme_THF()+
   facet_grid(cols=vars(met_cat))+
   scale_colour_THF()+
-    labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+    labs(x = "", y="Response time (hours:minutes)", caption = "NHS England, Ambulance Quality Indicators")+
     ggtitle(var.x)+
     theme(legend.text=element_text(size=11),
           legend.title = element_blank(),
@@ -126,7 +130,101 @@ trends_graph(var.x=org_list[1])
 
 ```
 
-# Incidents
+
+### Rolling average 
+
+```{r, echo=FALSE}
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+amb_response_raw<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'amb_RT_regions.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+
+
+
+amb_response<-amb_response_raw %>% 
+  filter(org_code=="Eng") %>% 
+  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time') %>% 
+  mutate(resp_time=as.numeric(resp_time)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  # mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
+  # mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  # mutate(resp_time2=as_hms(resp_time2)) %>% 
+  pivot_wider(c("org_name", "date", "date2"),names_from=  metric, values_from = resp_time)
+
+amb_response_average<-amb_response %>% 
+  mutate(c1_mean_rollmean=rollmean(c1_mean, k=12,fill=NA),
+         c2_mean_rollmean=rollmean(c2_mean, k=12,fill=NA),
+         c3_mean_rollmean=rollmean(c3_mean, k=12,fill=NA),
+         c4_mean_rollmean=rollmean(c4_mean, k=12,fill=NA),
+         c1_90thcent_rollmean=rollmean(c1_90thcent, k=12,fill=NA),
+         c2_90thcent_rollmean=rollmean(c2_90thcent, k=12,fill=NA),
+         c3_90thcent_rollmean=rollmean(c3_90thcent, k=12,fill=NA),
+         c4_90thcent_rollmean=rollmean(c4_90thcent, k=12,fill=NA)) %>% 
+  drop_na()
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+amb_response_average_plots<-cbind(amb_response_average,list_dates,order)
+
+amb_response_average_plots<-amb_response_average_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+  pivot_longer(c(c1_mean_rollmean:c4_90thcent_rollmean), names_to = 'metric', values_to = 'resp_time') %>% 
+  mutate(resp_time=as.numeric(resp_time)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>%
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>%
+  mutate(resp_time2=as_hms(resp_time2))
+
+plot<-amb_response_average_plots %>%
+  mutate(met_group=substr(metric,0,2)) %>% 
+  mutate(met_cat=ifelse(str_detect(metric,'cent'),'90th centile','Mean')) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
+                        ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  ggplot(.,aes(x=name, y=resp_time2, group=met_group, colour=met_group))+
+  geom_line(aes(linetype=met_cat))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  # scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  # scale_y_time(limits = as_hms(c(0,72000)), breaks = as_hms(seq(0, 72000, by = 7200)))+
+  scale_y_time(breaks = as_hms(seq(0, 72000, by = 1800)))+
+  theme_THF()+
+  facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Response time (hours:mins:secs)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+
+
+# Incidents {.tabset}
 
 ```{r, echo=FALSE}
 
@@ -159,11 +257,11 @@ amb_dta_regions<-amb_dta_regions %>%
 ```{r, echo=FALSE}
 
 
-
 plot<-amb_dta_regions %>%
   filter(org_code=="Eng"& metric=="all_incidents")%>% 
   ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="stack", stat="identity")+
   scale_x_yearmonth( breaks = 'months',date_labels = "%b %g")+
@@ -190,6 +288,110 @@ ggplotly(plot) %>%
 
 ```
 
+
+## All incidents (rolling average)
+
+```{r, echo=FALSE}
+
+amb_incidents2<-amb_incidents %>% 
+  filter(org_code=="Eng") %>% 
+  select(c(year:c4,date)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  select(all_incidents:date2)
+
+
+
+roll_mean_incidents<-amb_incidents2 %>% 
+  mutate(all_incidents_rollmean=rollmean(as.numeric(all_incidents), k=12,fill=NA),
+         c1_rollmean=rollmean(as.numeric(c1), k=12,fill=NA),
+         c2_rollmean=rollmean(as.numeric(c2), k=12,fill=NA),
+         c3_rollmean=rollmean(as.numeric(c3), k=12,fill=NA),
+         c4_rollmean=rollmean(as.numeric(c4), k=12,fill=NA)) %>% 
+  drop_na()
+
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+amb_incidents_average_plots<-cbind(roll_mean_incidents,list_dates,order)
+
+amb_incidents_average_plots<-amb_incidents_average_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+  pivot_longer(c(all_incidents_rollmean:c4_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+  filter(metric=="all_incidents_rollmean") %>% 
+  mutate(met_group= "All incidents") %>% 
+  mutate(name=fct_reorder(list_dates,order)) 
+
+
+plot<-amb_incidents_average_plots %>% 
+  ggplot(.,aes(x=name, y=counts, group=met_group, colour=met_group))+
+  geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
+  theme_THF()+
+  # facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts of incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+
+
+
+## All incidents and category 1
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+
+prop_incidents<-amb_incidents2 %>% 
+  mutate(all_incidents=as.numeric(all_incidents),
+          c1_prop=as.numeric(c1)/as.numeric(all_incidents),
+         c2_prop=as.numeric(c2)/as.numeric(all_incidents),
+         c3_prop=as.numeric(c3)/as.numeric(all_incidents),
+         c4_prop=as.numeric(c4)/as.numeric(all_incidents))
+
+coeff=max(prop_incidents$all_incidents)
+ggp1 <- ggplot(prop_incidents) +
+  geom_bar(aes(date2, all_incidents), color="gray69", stat="identity", fill="gray69", alpha=.4) +
+  scale_y_continuous(labels=comma)+
+  xlab("") +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+ggp2 <- ggp1 +
+  geom_line(aes(date2, c1_prop*coeff, group=1), color="red", lwd=0.5, linetype='longdash')
+ggp3 <- ggp2 +
+  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage of C1 incidents (%)")) +
+  geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  ggtitle("Incidents") +
+  theme_THF()
+ggp3
+
+```
+
+
+
+
 ## Category 
 
 ```{r, echo=FALSE}
@@ -198,6 +400,7 @@ plot<-amb_dta_regions %>%
   filter(org_code == "Eng"& metric != "all_incidents" ) %>% 
   ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="stack", stat="identity")+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
@@ -223,6 +426,67 @@ ggplotly(plot) %>%
 
 ```
 
+## Rolling average (categories)
+
+```{r, echo=FALSE}
+
+roll_mean_incidents<-amb_incidents2 %>% 
+  mutate(all_incidents_rollmean=rollmean(as.numeric(all_incidents), k=12,fill=NA),
+         c1_rollmean=rollmean(as.numeric(c1), k=12,fill=NA),
+         c2_rollmean=rollmean(as.numeric(c2), k=12,fill=NA),
+         c3_rollmean=rollmean(as.numeric(c3), k=12,fill=NA),
+         c4_rollmean=rollmean(as.numeric(c4), k=12,fill=NA)) %>% 
+  drop_na()
+
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+amb_incidents_average_plots<-cbind(roll_mean_incidents,list_dates,order)
+
+amb_incidents_average_plots<-amb_incidents_average_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+  pivot_longer(c(c1_rollmean:c4_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+  mutate(met_group=substr(metric,0,2)) %>% 
+  mutate(met_cat=ifelse(str_detect(metric,'cent'),'90th centile','Mean')) %>% 
+  mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
+  mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
+                        ,paste(met_group,"_90th centile (hours:min:sec)"))) %>%
+  mutate(name=fct_reorder(list_dates,order)) 
+
+
+plot<-amb_incidents_average_plots %>% 
+  ggplot(.,aes(x=name, y=counts, group=met_group, colour=met_group))+
+  geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
+  theme_THF()+
+  # facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Counts of incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+
 ## Type of incidents
 
 ```{r, echo=FALSE}
@@ -244,6 +508,7 @@ plot<-amb_dta_regions_out %>%
   filter(org_code=="Eng"& metric!="all_incidents")%>% 
    ggplot(.,aes(x=date2, y=as.numeric(incidents), group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="fill", stat="identity")+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
@@ -267,6 +532,59 @@ ggplotly(plot) %>%
   layout(legend=list(title=list(text=''))) %>% 
   layout(autosize = F, width = 1200, height = 500, margin = m)
 ```
+
+## Types of incidents (rolling average)
+```{r, echo=FALSE}
+
+amb_incidents_type<-amb_incidents %>% 
+  filter(org_code=="Eng") %>% 
+  select(c(year:all_incidents,hear_treat:date)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  select(all_incidents:date2)
+
+
+  roll_mean_incidents_types<-amb_incidents_type %>% 
+    mutate(hear_treat_rollmean=rollmean(as.numeric(hear_treat), k=12,fill=NA),
+           convey_ED_rollmean=rollmean(as.numeric(convey_ED), k=12,fill=NA),
+           convey_elsewhere_rollmean=rollmean(as.numeric(convey_elsewhere), k=12,fill=NA),
+           see_treat_rollmean=rollmean(as.numeric(see_treat), k=12,fill=NA)) %>% 
+    drop_na()
+  
+amb_incidents_types_average_plots<-cbind(roll_mean_incidents_types,list_dates,order)
+  
+amb_incidents_types_average_plots<-amb_incidents_types_average_plots %>% 
+    select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
+    pivot_longer(c(hear_treat_rollmean:see_treat_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+    mutate(name=fct_reorder(list_dates,order)) 
+  
+  
+plot<-amb_incidents_types_average_plots %>% 
+    ggplot(.,aes(x=name, y=counts, group=metric, colour=metric))+
+    geom_line(linetype='solid')+
+    scale_y_continuous(labels=comma)+
+    theme_THF()+
+    # facet_grid(cols=vars(met_cat))+
+    scale_colour_THF()+
+    labs(x = "", y="Incidents counts", caption = "NHS England, Ambulance Quality Indicators")+
+    theme(legend.text=element_text(size=11),
+          legend.title = element_blank(),
+          axis.text.x=element_text(size=8, angle=90), 
+          axis.text.y=element_text(size=11),
+          plot.caption = element_markdown(hjust=0, size=9),
+          plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+          legend.margin=margin(0,0,0,0),
+          legend.box.margin=margin(-10,-10,-10,-10))
+  
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+
 
 
 # Workforce 
@@ -297,6 +615,7 @@ plot<-wf_eng %>%
   geom_line(linetype='solid', colour='#dd0031')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
+  scale_y_continuous(labels=comma)+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
   ggtitle("England")+
   theme(legend.text=element_text(size=11),
@@ -325,6 +644,7 @@ plot<-wf_eng %>%
   ggplot(.,aes(x=date, y=val, group=group, colour=group))+
   geom_point()+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
@@ -366,6 +686,7 @@ plot<-wf_eng_amb %>%
   geom_point(colour='#dd0031')+
   geom_line(linetype='solid', colour='#dd0031')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  scale_y_continuous(labels=comma)+
   theme_THF()+
   labs(x = "", y="FTE count", caption = "NHS Digital-workforce statistics")+
   theme(legend.text=element_text(size=11),
@@ -681,6 +1002,7 @@ plot<-amb_dta_plot %>%
   pivot_longer(c(contact_count, calls_answered), names_to="metric", values_to="count") %>% 
   ggplot(.,aes(x=date2, y=count, group=metric, colour=metric))+
   geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
   # geom_line(aes(y=calls_answered),linetype='solid', colour="blue")+
   # geom_point(size=0.25)+
   # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
@@ -708,6 +1030,60 @@ ggplotly(plot) %>%
 
 
 ```
+
+
+## Counts (rolling average)  
+
+```{r, echo=FALSE}
+
+rolling_count_answered<-amb_dta_plot %>% 
+  filter(org_lab=="England") %>% 
+  dplyr::select(c(date2,date,contact_count, calls_answered)) %>% 
+  distinct() %>% 
+  mutate(contact_count_rollmean=rollmean(contact_count, k=12, fill=NA),
+         calls_answered_rollmean=rollmean(calls_answered, k=12, fill=NA)) %>% 
+  drop_na()
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+rolling_count_answered<-cbind(rolling_count_answered,list_dates,order)
+
+rolling_count_answered_plot<-rolling_count_answered %>% 
+  select(list_dates, order, contains("rollmean")) %>% 
+  pivot_longer(contains("rollmean"), names_to="metric", values_to="val") %>% 
+  mutate(name=fct_reorder(list_dates,order)) 
+
+plot<-rolling_count_answered_plot %>% 
+  ggplot(.,aes(x=name, y=val, group=metric, colour=metric))+
+  geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
+  theme_THF()+
+  # facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="counts", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
 
 
 ## Mean call answer times 
@@ -743,9 +1119,55 @@ ggplotly(plot) %>%
 
 ```
 
+## Mean answer times (rolling average)
 
-# Resources 
+```{r, echo=FALSE}
 
+rolling_mean_answer<-amb_dta_plot %>% 
+  filter(org_lab=="England"& metric=="answered_times_mean") %>% 
+  dplyr::select(c(date2,date,answer_time)) %>% 
+  mutate(answer_time_rollmean=rollmean(as.numeric(answer_time), k=12, fill=NA)) %>% 
+  drop_na() %>% 
+  mutate(answer_time2_rollmean=as.POSIXct(as.numeric(answer_time_rollmean),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(answer_time2_rollmean=format(answer_time2_rollmean, format="%H:%M:%S")) %>% 
+  mutate(answer_time2_rollmean=as_hms(answer_time2_rollmean))
+
+
+rolling_mean_answer<-cbind(rolling_mean_answer,list_dates,order)
+
+plot<-rolling_mean_answer %>%
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  ggplot(.,aes(x=name, y=answer_time2_rollmean, group=1))+
+  geom_line(linetype='solid', colour='#dd0031')+
+  # scale_y_time(breaks = as_hms(seq(0, 72000, by = 1800)))+
+  theme_THF()+
+  scale_colour_THF()+
+  labs(x = "", y="Mean answer time (seconds)", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+
+# Resources {.tabset}
+
+* Counts of resources assigned to incidents and those that arrived on scene. This includes all trust dispatched resources, private ambulance resources and voluntary ambulance services. 
+
+* Resources can be classed as conveying resource that will transport patients in a time frame appropriate to their clinical needs (usually category 2-4) and/or resources that are appropriate to the patients' needs (if this is on site 'treatment', i.e. trust response vehicle with a health care professional on scene who has access to defibrillator) 
+
+## Resources 
 ```{r, echo=FALSE}
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
 
@@ -783,6 +1205,7 @@ amb_dta_plot<-amb_incidents %>%
   mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
                                            "Midlands","East of England","London","South East","South West")))
 
+
 plot<-amb_dta_plot %>%
   filter(org_lab=="England") %>%
   pivot_longer(c(mean_alloc, mean_arrive), names_to="metric", values_to="count") %>% 
@@ -795,7 +1218,7 @@ plot<-amb_dta_plot %>%
   theme_THF()+
   facet_grid(cols=vars(metric))+
   scale_colour_THF()+
-  labs(x = "", y="Mean resources arriving on scene", caption = "NHS England, Ambulance Quality Indicators")+
+  labs(x = "", y="Mean number of resources", caption = "NHS England, Ambulance Quality Indicators")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=60), 
@@ -809,6 +1232,153 @@ ggplotly(plot) %>%
   layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
   layout(legend=list(title=list(text=''))) %>% 
   layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+```
+
+
+## Resourcs (rolling average)
+
+```{r, echo=FALSE}
+
+rolling_count_resource<-amb_dta_plot %>% 
+  filter(org_lab=="England") %>% 
+  dplyr::select(c(date2,date,type,mean_alloc, mean_arrive)) %>% 
+  group_by(type) %>% 
+  mutate(mean_alloc_rollmean=rollmean(mean_alloc, k=12, fill=NA),
+         mean_arrive_rollmean=rollmean(mean_arrive, k=12, fill=NA)) %>% 
+  drop_na() %>% 
+  pivot_wider(id_cols=date2,names_from=type, values_from=c(mean_alloc_rollmean, mean_arrive_rollmean)) 
+
+start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:46)
+
+rolling_count_resource<-cbind(rolling_count_resource,list_dates,order)
+
+rolling_count_resource_plot<-rolling_count_resource %>% 
+  select(list_dates, order, contains("rollmean")) %>% 
+  pivot_longer(contains("rollmean"), names_to="metric", values_to="val") %>% 
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  mutate (met_group=ifelse(str_detect(metric, "alloc"), "Mean allocated", "Mean arriving on scene")) %>% 
+  mutate(type=ifelse(str_detect(metric,"c1t"),substr(metric,
+                                                     (str_length(metric)-2),(str_length(metric))),
+                                                     substr(metric,
+                                                            (str_length(metric)-1),(str_length(metric)))))
+
+
+plot<-rolling_count_resource_plot %>%
+  filter(type!="c1t") %>% 
+  ggplot(.,aes(x=name, y=val, group=type, colour=type))+
+  geom_line(linetype='solid')+
+  facet_grid(cols=vars(met_group))+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  # scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  scale_colour_THF()+
+  labs(x = "", y="Mean number of resources", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
+
+
+```
+
+
+# A&E metrics {.tabset}
+
+## A&E attendances (rolling average)
+
+```{r, echo=FALSE}
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+aeattend<-s3read_using(readRDS # Which function are we using to read
+                       , object = 'aeattend.rds' # File to open
+                       , bucket = buck) # Bucket name defined above
+
+aeattend <- aeattend %>%
+  mutate(time=paste0(year, formatC(month, width=2, flag="0"))) %>%
+  mutate(pct4to12hrsadmit=ifelse(totaladmit==0, 0, pct4to12hrsadmit )) %>%
+  mutate(pct12plushrsadmit=ifelse(totaladmit==0, 0, pct12plushrsadmit )) 
+
+summattend <- aeattend %>%
+  drop_na(totalattend) %>%
+  drop_na(`Number of A&E attendances Type 1`) %>%
+  group_by(time) %>%
+  summarise(meanattend=mean(totalattend), meantype1=mean(`Number of A&E attendances Type 1`),
+            meantype2=mean(`Number of A&E attendances Type 2`), meantypeoth=mean(`Number of A&E attendances Other A&E Department`), n=n())
+
+summattend<-summattend %>% 
+  mutate(date=paste0(substr(time,0,4),"-",substr(time,5,6),"-01")) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_name="England")
+
+
+roll_mean_ae_attend<-summattend %>% 
+  mutate(meanattend_rollmean=rollmean(meanattend, k=12,fill=NA),
+         meantype1_rollmean=rollmean(meantype1, k=12,fill=NA),
+         meantype2_rollmean=rollmean(meantype2, k=12,fill=NA),
+         meantypeoth_rollmean=rollmean(meantypeoth, k=12,fill=NA)) %>% 
+  drop_na()
+ 
+
+start_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2021-04-01'),by='1 month')),"%Y-%m-%d")
+end_dates<-format(as.Date(seq(ymd('2019-03-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
+
+list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
+order<-c(1:37)
+
+ae_attend_plots<-cbind(roll_mean_ae_attend,list_dates,order)
+
+ae_attend_plots<-ae_attend_plots %>% 
+  select(c(date, date2, list_dates, order, contains("rollmean")))%>% 
+  pivot_longer(c(meanattend_rollmean:meantypeoth_rollmean), names_to = 'metric', values_to = 'counts') %>% 
+  mutate(name=fct_reorder(list_dates,order)) %>% 
+  mutate(met_lab=case_when(str_detect(metric, "meanattend")~ "Total attendances",
+                           str_detect(metric, "type1")~ "Type 1 attendaces",
+                           str_detect(metric, "type2")~ "Type 2 attendances",
+                           str_detect(metric, "oth")~ "Total other attendances"))
+
+plot<-ae_attend_plots %>% 
+  ggplot(.,aes(x=name, y=counts, group=met_lab, colour=met_lab))+
+  geom_line(linetype='solid')+
+  scale_y_continuous(labels=comma)+
+  theme_THF()+
+  # facet_grid(cols=vars(met_cat))+
+  scale_colour_THF()+
+  labs(x = "", y="Number of attendances", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=90), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) %>% 
+  layout(autosize = F, width = 1200, height = 500, margin = m)
+
 
 
 ```

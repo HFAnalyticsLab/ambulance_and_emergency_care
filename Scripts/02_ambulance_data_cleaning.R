@@ -18,7 +18,7 @@ amb_dta_clean<-amb_dta %>%
 
 #by trust 
 list_org_codes_trust<-c("RX9", "RYC", "R1F", "RRU", "RX6", "RX7", "RYE", "RYD", "RYF", "RYA", "RX8") 
-#some data is no complete
+#some data is not complete
 
 #by region
 list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
@@ -67,10 +67,14 @@ amb_dta_clean<-amb_dta %>%
 
 
 names(amb_dta_clean)[6:11]<-c("all_incidents", "c1", "c1t", "c2", "c3", "c4")
-names(amb_dta_clean)[12:15]<-c("hear_treat", "convey_ED", "convey_elsewhere", "see_treat" )
+names(amb_dta_clean)[12:15]<-c("hear_treat", "convey_ED", "convey_elsewhere", "see_treat")
+
+
+`%notin%` <- Negate(`%in%`)
 
 amb_incidents<-amb_dta_clean %>% 
-  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) %>% 
+  filter(date %notin% c(as.Date("2017/08/01"),as.Date("2017/09/01")))
 
 #save incidents data 
 #### save R objects from the environment directly to your s3 bucket
