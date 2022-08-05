@@ -181,3 +181,5 @@ amball201722 <- rbind(amball201718,amball201819)
 amball201722 <- rbind(amball201722,amball201920)
 amball201722 <- rbind(amball201722,amball202021)
 amball201722 <- rbind(amball201722,amball202122)
+
+saveRDS(amball201722, file="amball201722.rds")
