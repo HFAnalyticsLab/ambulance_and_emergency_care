@@ -1,11 +1,11 @@
 
 library(aws.s3)
-library("readxl")
+library(readxl)
 library(tidyverse)
 library(lubridate)
 
-aevolume <- read_excel("Data/AEvolume.xlsx")
-aewait <- read_excel("Data/AEwait4plus.xlsx")
+aevolume <- readxl::read_excel("data/AEvolume.xlsx")
+aewait <- read_excel("data/AEwait4plus.xlsx")
 
 aevolwait <- merge(aevolume, aewait, by="Period")
 
@@ -15,7 +15,11 @@ aevolwait <- aevolwait %>%
   mutate(aewait4plus=(1-`Percentage in 4 hours or less (type 1)`)) %>%
   mutate(pct4to12admitted=`Number of patients spending >4 hours from decision to admit to admission`/`Total Emergency Admissions`) %>%
   mutate(pct12admitted=`Number of patients spending >12 hours from decision to admit to admission`/`Total Emergency Admissions`) %>%
-  mutate(pct4plusadmitted=pct4to12admitted+pct12admitted)
+  mutate(pct4plusadmitted=pct4to12admitted+pct12admitted) %>% 
+  mutate(totattendaces=`Type 1 Departments - Major A&E`)
+
+
+write_csv(aevolwait, 'aevolwait.csv')
 
 ## Chart AE attendances
 coeff=max(aevolwait$`Type 1 Departments - Major A&E`)
