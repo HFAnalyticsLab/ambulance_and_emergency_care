@@ -25,7 +25,7 @@ amb_dta<-s3read_using(read.csv # Which function are we using to read
                    , object = 'amb_RT_regions.csv' # File to open
                    , bucket = buck) # Bucket name defined above
 
-# Category x Regions -----------------------------------------------------------------
+9# Category x Regions -----------------------------------------------------------------
 
 
 #reformat for plots
@@ -442,6 +442,10 @@ amb_dta_try<-amb_dta_flourish %>%
 
 write.csv(amb_dta_flourish, "amb_dta_flourish.csv")
 
+
+amb_try<-amb_dta %>% 
+  
+
 #### save R objects from the environment directly to your s3 bucket
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
 
@@ -512,3 +516,18 @@ post<-amb_dta %>%
   mutate(resp_time2=as.POSIXct(as.numeric(mean_resp_time),origin = "1970-01-01", tz="GMT")) %>% 
   mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
   mutate(resp_time2=as_hms(resp_time2))
+
+#Alternative figure 2 
+amb_dta_try<-amb_dta %>% 
+  select(org_code:org_name, date, contains("mean")) %>% 
+  pivot_longer(cols = contains("mean"), names_to = "Metric", values_to="Mean") %>% 
+  mutate(Metric=ifelse(str_detect(Metric,"c1T"), substr(Metric, 0,3), substr(Metric, 0,2))) %>% 
+  left_join(amb_dta %>% 
+  select(org_code:org_name, date, contains("90thcent")) %>% 
+  pivot_longer(cols=contains("90thcent"), names_to="Metric", values_to="90thcent") %>% 
+  mutate(Metric=ifelse(str_detect(Metric,"c1T"), substr(Metric, 0,3), substr(Metric, 0,2)))) %>% 
+  mutate(date2=yearmonth(date)) %>% 
+  filter(Metric!="c1T")
+  
+
+write_csv(amb_dta_try, 'amb_dta_try.csv')
