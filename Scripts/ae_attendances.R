@@ -4,27 +4,42 @@ library(readxl)
 library(tidyverse)
 library(lubridate)
 
-aevolume <- readxl::read_excel("data/AEvolume.xlsx")
-aewait <- read_excel("data/AEwait4plus.xlsx")
 
-aevolwait <- merge(aevolume, aewait, by="Period")
+aevolume<-read_excel("data/aevol.xls", sheet='Activity', range="B16:N160")
+aewait<-read_excel("data/aevol.xls", sheet='Performance', range="B16:N157")
+
+
+aevolume<-aevolume %>% 
+  clean_names() %>% 
+  select(c("period","type_1_departments_major_a_e","emergency_admissions_via_type_1_a_e",
+           "total_emergency_admissions","number_of_patients_spending_4_hours_from_decision_to_admit_to_admission",
+           "number_of_patients_spending_12_hours_from_decision_to_admit_to_admission")) %>% 
+  filter(period>as.Date("2016-12-01"))
+
+aewait<-aewait %>% 
+  clean_names() %>% 
+  select(c("period","percentage_in_4_hours_or_less_type_1")) %>% 
+  filter(period>as.Date("2016-12-01"))
+
+aevolwait <- merge(aevolume, aewait, by="period")
 
 aevolwait <- aevolwait %>%
-  mutate(Period=as.Date(Period), origin="1899-12-30") %>%
-  mutate(monthyear=format(as.Date(Period), "%Y-%m")) %>%
-  mutate(aewait4plus=(1-`Percentage in 4 hours or less (type 1)`)) %>%
-  mutate(pct4to12admitted=`Number of patients spending >4 hours from decision to admit to admission`/`Total Emergency Admissions`) %>%
-  mutate(pct12admitted=`Number of patients spending >12 hours from decision to admit to admission`/`Total Emergency Admissions`) %>%
+  mutate(Period=as.Date(period, origin="1899-12-30")) %>%
+  mutate(monthyear=format(as.Date(period), "%b %y")) %>%
+  mutate(aewait4plus=(1-percentage_in_4_hours_or_less_type_1)) %>%
+  mutate(pct4to12admitted=number_of_patients_spending_4_hours_from_decision_to_admit_to_admission/total_emergency_admissions) %>%
+  mutate(pct12admitted=number_of_patients_spending_12_hours_from_decision_to_admit_to_admission/total_emergency_admissions) %>%
   mutate(pct4plusadmitted=pct4to12admitted+pct12admitted) %>% 
-  mutate(totattendaces=`Type 1 Departments - Major A&E`)
+  mutate(totattendaces=type_1_departments_major_a_e)
 
 
 write_csv(aevolwait, 'aevolwait.csv')
 
+
 ## Chart AE attendances
-coeff=max(aevolwait$`Type 1 Departments - Major A&E`)
+coeff=max(aevolwait$type_1_departments_major_a_e)
 ggp1 <- ggplot(data=aevolwait) +
-  geom_bar(aes(x=monthyear, y=`Type 1 Departments - Major A&E`), colour="blue", stat="identity") +
+  geom_bar(aes(x=monthyear, y=type_1_departments_major_a_e), colour="blue", stat="identity") +
   xlab("Year and quarter") +
   theme(axis.text.x=element_text(angle=90, hjust=1))
 ggp2 <- ggp1 + 
@@ -34,9 +49,9 @@ ggp3 <- ggp2 +
 ggp3
 
 ## Chart emergency admissions
-coeff=max(aevolwait$`Total Emergency Admissions`)
+coeff=max(aevolwait$total_emergency_admissions)
 ggp1 <- ggplot(aevolwait) +
-  geom_bar(aes(x=monthyear, y=`Total Emergency Admissions`), color="blue", stat="identity") +
+  geom_bar(aes(x=monthyear, y=total_emergency_admissions), color="blue", stat="identity") +
   xlab("Year and quarter") +
   theme(axis.text.x=element_text(angle=90, hjust=1))
 ggp2 <- ggp1 +
