@@ -287,7 +287,8 @@ amb_incidents2<-amb_incidents %>%
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
   select(all_incidents:date2) %>% 
-  mutate(total_cat=c1+c2+c3+c4)
+  mutate(total_cat=c1+c2+c3+c4) %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y"))
 
 
 
@@ -351,17 +352,17 @@ prop_incidents<-amb_incidents2 %>%
 
 
 prop_incidents_v1<-prop_incidents %>% 
-  select(date, date2, c1_prop:c4_prop) %>% 
+  select(date, date2, monthyear, c1_prop:c4_prop) %>% 
   mutate(grid="Proportion of C1-C4 incidents (%)")
 
 
 prop_incidents_v2<-prop_incidents %>% 
-  select(date, date2, all_incidents) %>% 
+  select(date, date2, monthyear, all_incidents) %>% 
   mutate(grid="Total number of incidents")
 
 
 incidents_flourish<-prop_incidents_v2 %>% 
-  full_join(prop_incidents_v1)
+  full_join(prop_incidents_v1) 
 
 write.csv(incidents_flourish, "incidents_flourish_try.csv")
 
