@@ -13,7 +13,7 @@ library(janitor)
 
 #Ambulance Quality Indicators 
 
-link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/07/AmbSYS-to-Jun22.csv'
+link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/08/AmbSYS-for-2022-July.csv'
 
 destfile <- here::here('data', "ambsys.csv")
 curl_download(link, destfile = destfile)
@@ -75,7 +75,11 @@ link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/04/
 destfile <- here::here('data', "raw2021handovers.xlsx")
 curl_download(link, destfile = destfile)
 
+#A&E admissions and waiting times 
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/08/Adjusted-Monthly-AE-Time-Series-July-2022.xls'
 
+destfile <- here::here('data', "aevol.xlx")
+curl_download(link, destfile = destfile)
 
 
 
