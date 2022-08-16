@@ -1,6 +1,7 @@
 library(aws.s3)
 library(tidyverse)
 library(ggplot2)
+library(ISOweek)
 
 
 amball <- readRDS("amball201722.rds")
@@ -29,7 +30,8 @@ summamb <- amball %>%
   select(c(start_week,date2, year,mean60plus,mean3060,n)) %>% 
   distinct() %>% 
   mutate(week=str_sub(date2,6,8)) %>% 
-  mutate(start_week=format(start_week, "%d-%b-%Y"))
+  mutate(start_week=format(start_week, "%d %b %y"))
+  
 
 
 
@@ -38,8 +40,8 @@ summamb <- amball %>%
 # summamb <- filter(summamb, n>9)
 
 p = ggplot(summamb) + 
-  geom_line(aes(start_week, mean60plus, group=1), color="red", lwd=2) +
-  geom_line(aes(start_week, mean3060, group=1), color="blue", lwd=2 ) +
+  geom_line(aes(date2, mean60plus, group=1), color="red", lwd=2) +
+  geom_line(aes(date2, mean3060, group=1), color="blue", lwd=2 ) +
   xlab("Month and year") +
   theme(axis.text.x=element_text(angle=90, hjust=1)) +
   ylab("% delayed")
