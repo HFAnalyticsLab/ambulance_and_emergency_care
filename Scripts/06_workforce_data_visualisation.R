@@ -213,7 +213,20 @@ turnover %>%
 
 # Staff sickness and absence ----------------------------------------------
 
-list_dates<-format(as.Date(seq(ymd('2017-09-01'),ymd('2022-04-01'),by='months')),"%Y-%m")
+list_dates<-format(as.Date(seq(ymd('2017-09-01'),ymd('2022-07-01'),by='months')),"%Y-%m")
+
+
+
+flourish_sick_ab<-sick_ab %>% 
+  mutate(filter_date=format(as.Date(date2), "%Y-%m"))%>% 
+  filter(filter_date %in% list_dates) %>%
+  arrange(filter_date) %>% 
+  select(-c(X, fte_days_sick, fte_days_available)) %>% 
+  pivot_wider(., names_from=org_type, values_from=sa_rate) %>% 
+  mutate(monthyear=format(as.Date(date2), "%b %y")) 
+  
+write.csv(flourish_sick_ab, 'flourish_staff_sick_ab.csv')
+
 
 sick_ab %>% 
   mutate(filter_date=format(as.Date(date2), "%Y-%m"))%>% 
