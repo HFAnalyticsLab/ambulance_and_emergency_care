@@ -76,6 +76,7 @@ sick_ab<-read_csv(here::here('data', "eng_sickness.csv"))
 
 sick_ab_all<-sick_ab %>% 
   clean_names() %>% 
+  mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
   group_by(date, org_type) %>% 
   summarise(across(where(is.numeric), sum)) %>% 
   select(-c(sort_date, sa_rate_percent)) %>% 
