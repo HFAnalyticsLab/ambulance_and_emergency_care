@@ -30,9 +30,42 @@ summamb <- amball %>%
   select(c(start_week,date2, year,mean60plus,mean3060,n)) %>% 
   distinct() %>% 
   mutate(week=str_sub(date2,6,8)) %>% 
-  mutate(start_week=format(start_week, "%d %b %y"))
+  mutate(start_week=format(start_week, "%d %b %y")) %>% 
+  ungroup()
   
+order<-c(paste0("W", 47:53),paste0("W0",1:9), paste0("W",10:13))
 
+flourish_amb_handover<-summamb %>% 
+  filter(year=="2017/18") %>% 
+  select(c(week, contains("mean"))) %>% 
+  pivot_longer(contains("mean"), names_to="type", values_to="2017/18") %>% 
+  full_join(summamb %>% 
+              filter(year=="2018/19") %>% 
+              select(c(week, contains("mean"))) %>% 
+              pivot_longer(contains("mean"), names_to="type", values_to="2018/19"), by=c("week"="week",
+                                                                                         "type"="type")) %>% 
+  full_join(summamb %>% 
+              filter(year=="2019/20") %>% 
+              select(c(week, contains("mean"))) %>% 
+              pivot_longer(contains("mean"), names_to="type", values_to="2019/20"), by=c("week"="week",
+                                                                                         "type"="type")) %>% 
+  full_join(summamb %>% 
+              filter(year=="2020/21") %>% 
+              select(c(week, contains("mean"))) %>% 
+              pivot_longer(contains("mean"), names_to="type", values_to="2020/21"), by=c("week"="week",
+                                                                                         "type"="type")) %>% 
+  
+  full_join(summamb %>% 
+              filter(year=="2021/22") %>% 
+              select(c(week, contains("mean"))) %>% 
+              pivot_longer(contains("mean"), names_to="type", values_to="2021/22"), by=c("week"="week",
+                                                                                         "type"="type")) %>% 
+  mutate(week=factor(week, levels = order)) %>% 
+  arrange(week)
+
+
+
+write.csv(flourish_amb_handover,'flourish_amb_handovers.csv')
 
 
 # 
