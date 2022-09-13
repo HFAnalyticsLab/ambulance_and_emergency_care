@@ -405,22 +405,37 @@ trends_graph(var.x=label_names[4])
 
 # Data for flourish -------------------------------------------------------
 
-
-
 amb_dta_charts<-amb_dta %>% 
   mutate(monthyear=format(as.Date(date), "%b %y"))
 
 amb_dta_charts[7:16] = lapply(amb_dta_charts[7:16], FUN = function(y){(y)/60})
 
-write.csv(amb_dta_charts,'amb_dta_charts.csv')
+cc<-amb_dta_charts %>% 
+  select(date, monthyear, org_name, contains("c1_")) %>% 
+  pivot_longer(contains("c1_"), names_to="Metric", values_to="C1") %>% 
+  mutate(Metric=substr(Metric, 4,str_length(Metric))) %>% 
+  left_join(amb_dta_charts %>% 
+              select(date, monthyear, org_name, contains("c2_")) %>% 
+              pivot_longer(contains("c2_"), names_to="Metric", values_to="C2") %>% 
+              mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
+  left_join(amb_dta_charts %>% 
+  select(date, monthyear, org_name, contains("c3_")) %>% 
+  pivot_longer(contains("c3_"), names_to="Metric", values_to="C3") %>% 
+  mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
+  left_join(amb_dta_charts %>% 
+  select(date, monthyear, org_name, contains("c4_")) %>% 
+  pivot_longer(contains("c4_"), names_to="Metric", values_to="C4") %>% 
+  mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
+  mutate(Metric= ifelse(Metric=="mean", "Mean", "90th percentile"))
+
+write.csv(amb_dta_plot,'amb_dta_resp_charts.csv')
 
 
 #calculations
 
-pre_dates<-format(as.Date(seq(ymd('2018-03-01'),ymd('2019-06-01'),by='1 month')),"%Y-%m-%d")
-p_dates<-format(as.Date(seq(ymd('2020-03-01'),ymd('2021-06-01'),by='1 month')),"%Y-%m-%d")
-post_dates<-format(as.Date(seq(ymd('2021-07-01'),ymd('2022-06-01'),by='1 month')),"%Y-%m-%d")
-
+pre_dates<-format(as.Date(seq(ymd('2018-08-01'),ymd('2019-07-01'),by='1 month')),"%Y-%m-%d")
+post_dates<-format(as.Date(seq(ymd('2021-08-01'),ymd('2022-07-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(pre_dates, post_dates)
 
 pre<-amb_dta %>% 
   filter(date %in% pre_dates & region=="Eng") %>% 
@@ -456,6 +471,11 @@ post<-amb_dta %>%
   mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
   mutate(resp_time2=as_hms(resp_time2))
 
+
+
+write.csv(pre, 'pre.csv')
+write.csv(post, 'post.csv' )
+
 #Alternative figure 2 
 amb_dta_try<-amb_dta %>% 
   select(org_code:org_name, date, contains("mean")) %>% 
@@ -466,7 +486,39 @@ amb_dta_try<-amb_dta %>%
   pivot_longer(cols=contains("90thcent"), names_to="Metric", values_to="90thcent") %>% 
   mutate(Metric=ifelse(str_detect(Metric,"c1T"), substr(Metric, 0,3), substr(Metric, 0,2)))) %>% 
   mutate(date2=yearmonth(date)) %>% 
-  filter(Metric!="c1T")
+  filter(Metric!="c1T") %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y")) 
   
 
-write_csv(amb_dta_try, 'amb_dta_try.csv')
+write_csv(amb_dta_try, 'amb_dta_resp_time_v2.csv')
+
+
+#Calcs average
+amb_dta<-read_csv(here::here('data', "ambsys.csv"))
+
+#select relevant columns 
+amb_dta_clean<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(8,10:12,24,30,33,36))) %>% 
+  filter(region=="Eng") %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) %>% 
+  filter(as.character(date) %in% list_dates) %>% 
+  mutate(time=case_when(as.character(date) %in% pre_dates ~ "2018/19",
+                        as.character(date) %in% post_dates ~ "2021/22",
+                        TRUE ~ "NA"))
+
+amb_dta_clean[6:13] = lapply(amb_dta_clean[6:13], FUN = function(y){as.numeric(y)})
+
+calcs<-amb_dta_clean %>% 
+  group_by(time) %>% 
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>% 
+  mutate(total_incidents=a8+a10+a11+a12) %>% 
+  mutate(total_hours=a24+a30+a33+a36) %>% 
+  select(c(time, total_incidents, total_hours)) %>% 
+  mutate(mean_resptime=total_hours/total_incidents) %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(mean_resptime),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
+  mutate(resp_time2=as_hms(resp_time2)) 
+  
+  
+  

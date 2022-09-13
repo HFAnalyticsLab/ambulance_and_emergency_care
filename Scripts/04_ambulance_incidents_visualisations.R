@@ -291,6 +291,27 @@ amb_incidents2<-amb_incidents %>%
   mutate(monthyear=format(as.Date(date), "%b %y"))
 
 
+#Calcs for write up
+
+#Calcs
+
+pre_dates<-format(as.Date(seq(ymd('2018-08-01'),ymd('2019-07-01'),by='1 month')),"%Y-%m-%d")
+post_dates<-format(as.Date(seq(ymd('2021-08-01'),ymd('2022-07-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(pre_dates, post_dates)
+
+calcs<-amb_incidents2 %>%
+  filter(as.character(date) %in% list_dates) %>%
+  mutate(time=case_when(as.character(date)  %in% pre_dates ~ "2018/19",
+                        as.character(date) %in% post_dates ~ "2021/22",
+                        TRUE~"NA")) %>%
+  group_by(time) %>%
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>% 
+  mutate(c1_prop=(c1/total_cat)*100,
+         c2_prop=(c2/total_cat)*100,
+         c3_prop=(c3/total_cat)*100,
+         c4_prop=(c4/total_cat)*100)
+
+
 
 roll_mean<-amb_incidents2 %>% 
   mutate(all_incidents_mov_av=rollmean(as.numeric(all_incidents), k=3,fill=NA),
@@ -352,19 +373,11 @@ prop_incidents<-amb_incidents2 %>%
 
 
 prop_incidents_v1<-prop_incidents %>% 
-  select(date, date2, monthyear, c1_prop:c4_prop) %>% 
-  mutate(grid="Proportion of C1-C4 incidents (%)")
-
+  select(date, date2, monthyear, c1_prop:c4_prop)
 
 prop_incidents_v2<-prop_incidents %>% 
-  select(date, date2, monthyear, all_incidents) %>% 
-  mutate(grid="Total number of incidents")
+  select(date, date2, monthyear, all_incidents)
 
-
-incidents_flourish<-prop_incidents_v2 %>% 
-  full_join(prop_incidents_v1) 
-
-write.csv(incidents_flourish, "incidents_flourish_try.csv")
 
 #### save R objects from the environment directly to your s3 bucket
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
@@ -449,16 +462,52 @@ amb_incidents_type<-amb_incidents %>%
   mutate(date2=yearmonth(date)) %>% 
   select(all_incidents:date2)
 
+
+
+#calcs for write up
+pre_dates<-format(as.Date(seq(ymd('2018-08-01'),ymd('2019-07-01'),by='1 month')),"%Y-%m-%d")
+post_dates<-format(as.Date(seq(ymd('2021-08-01'),ymd('2022-07-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(pre_dates, post_dates)
+
+calcs<-amb_incidents_type %>%
+  filter(as.character(date) %in% list_dates) %>%
+  mutate(time=case_when(as.character(date)  %in% pre_dates ~ "2018/19",
+                        as.character(date) %in% post_dates ~ "2021/22",
+                        TRUE~"NA")) %>%
+  group_by(time) %>%
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>% 
+  mutate(hear_treat_prop=(hear_treat/all_incidents)*100,
+         convey_ED_prop=(convey_ED/all_incidents)*100,
+         convey_elsewhere_prop=(convey_elsewhere/all_incidents)*100,
+         see_treat_prop=(see_treat/all_incidents)*100) %>% 
+  mutate(f2f=convey_ED+convey_elsewhere+see_treat) %>% 
+  mutate(f2f_prop=(f2f/all_incidents)*100)
+
+
+
 prop_incidents_types<-amb_incidents_type %>% 
-mutate(hear_treat=as.numeric(hear_treat),
-       convey_ED=as.numeric(convey_ED),
-       convey_elsewhere=as.numeric(convey_elsewhere),
-       see_treat=as.numeric(see_treat)) %>% 
 mutate(total=hear_treat+convey_ED+convey_elsewhere+see_treat) %>% 
-  mutate(hear_treat_prop=hear_treat/total,
-         convey_ED_prop=convey_ED/total,
-         convey_elsewhere_prop=convey_elsewhere/total,
-         see_treat_prop=see_treat/total)
+  mutate(hear_treat_prop=(hear_treat/total)*100,
+         convey_ED_prop=(convey_ED/total)*100,
+         convey_elsewhere_prop=(convey_elsewhere/total)*100,
+         see_treat_prop=(see_treat/total)*100) %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y"))
+
+prop_incidents_v3<-prop_incidents_types %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y")) %>% 
+  select(date, date2, monthyear, hear_treat_prop:see_treat_prop)
+
+
+
+incidents_flourish<-prop_incidents_v2 %>% 
+  full_join(prop_incidents_v1) %>% 
+  full_join(prop_incidents_types)
+
+write.csv(incidents_flourish, "incidents_flourish_full.csv")
+
+write.csv(amb_incidents2, "amb_incidents2.csv")
+
+
 
 coeff=max(prop_incidents_types$total)
 ggp1 <- ggplot(prop_incidents_types)+

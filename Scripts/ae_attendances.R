@@ -32,9 +32,22 @@ aevolwait <- aevolwait %>%
   mutate(pct4plusadmitted=pct4to12admitted+pct12admitted) %>% 
   mutate(totattendaces=type_1_departments_major_a_e)
 
-
 write_csv(aevolwait, 'aevolwait.csv')
 
+
+aevolwait_v2<-aevolwait %>% 
+  select(c(monthyear, pct4plusadmitted)) %>% 
+  mutate(pct4plusadmitted=pct4plusadmitted*100) %>% 
+  mutate(Metric="Waiting 4+ hours to be admitted (%)") %>% 
+  full_join(aevolwait %>% 
+              select(c(monthyear, total_emergency_admissions)) %>% 
+              mutate(Metric="Total Emergency Admissions")) %>% 
+  mutate(Metric=factor(Metric, levels=c("Waiting 4+ hours to be admitted (%)", "Total Emergency Admissions")))
+
+  
+  
+  
+write_csv(aevolwait_v2, 'aevolwait_v2.csv')
 
 ## Chart AE attendances
 coeff=max(aevolwait$type_1_departments_major_a_e)

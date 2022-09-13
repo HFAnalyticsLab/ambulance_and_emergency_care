@@ -23,6 +23,10 @@ amb_dta<-s3read_using(read.csv # Which function are we using to read
                       , object = 'amb_calls.csv' # File to open
                       , bucket = buck) # Bucket name defined above
 
+# Make variables numeric --------------------------------------------------
+
+amb_dta[7:14] = lapply(amb_dta[7:14], FUN = function(y){as.numeric(y)})
+
 amb_dta_plot<-amb_dta %>% 
   pivot_longer(c(answered_times_mean:answered_times_90), names_to = 'metric', values_to = 'answer_time')
 
@@ -182,4 +186,29 @@ rolling_mean_answer %>%
 
 calcs<-rolling_mean_answer %>% 
   filter(list_dates %in% dates_calcs )
+
+
+
+
+
+#Calculations
+
+pre_dates<-format(as.Date(seq(ymd('2018-08-01'),ymd('2019-07-01'),by='1 month')),"%Y-%m-%d")
+post_dates<-format(as.Date(seq(ymd('2021-08-01'),ymd('2022-07-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(pre_dates, post_dates)
+
+calcs<-amb_dta %>% 
+filter(date %in% list_dates & region=="Eng") %>% 
+  mutate(time=case_when(date  %in% pre_dates ~ "2018/19",
+                        date %in% post_dates ~ "2021/22", 
+                        TRUE~"NA")) %>% 
+  select(time, calls_answered, answered_times_total) %>% 
+  group_by(time) %>% 
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>% 
+  mutate(mean_answer_time=answered_times_total/calls_answered) %>% 
+  mutate(answer_time2=as.POSIXct(as.numeric(mean_answer_time),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(answer_time2=format(answer_time2, format="%H:%M:%S")) %>% 
+  mutate(answer_time2=as_hms(answer_time2)) 
+
+
 

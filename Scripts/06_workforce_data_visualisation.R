@@ -216,7 +216,6 @@ turnover %>%
 list_dates<-format(as.Date(seq(ymd('2017-09-01'),ymd('2022-07-01'),by='months')),"%Y-%m")
 
 
-
 flourish_sick_ab<-sick_ab %>% 
   mutate(filter_date=format(as.Date(date2), "%Y-%m"))%>% 
   filter(filter_date %in% list_dates) %>%
