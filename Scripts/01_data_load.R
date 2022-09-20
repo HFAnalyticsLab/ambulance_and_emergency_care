@@ -82,5 +82,17 @@ destfile <- here::here('data', "aevol.xlx")
 curl_download(link, destfile = destfile)
 
 
+#Overnight bed occupancy 
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/08/Beds-Timeseries-2010-11-onwards-Q1-2022-23-ADJ-for-missings-TRFGH.xls'
 
+destfile <- here::here('data', "overnightbedoccup.xls")
+curl_download(link, destfile = destfile)
+
+
+#Overnight bed occupancy in months
+
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/Beds-publication-Timeseries-March-2020-August-2022.xlsx'
+
+destfile <- here::here('data', "bedoccup_montly.xlsx")
+curl_download(link, destfile = destfile)
 
