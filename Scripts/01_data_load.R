@@ -8,7 +8,13 @@ library(here)
 library(aws.s3)
 library(janitor)
 
-#data download
+
+
+
+#Data Download
+
+#Need to create a data folder in your working directory before this can work
+
 
 
 #Ambulance Quality Indicators 
