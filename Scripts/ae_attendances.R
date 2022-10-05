@@ -4,9 +4,9 @@ library(readxl)
 library(tidyverse)
 library(lubridate)
 
-
-aevolume<-read_excel("data/aevol.xls", sheet='Activity', range="B16:N160")
-aewait<-read_excel("data/aevol.xls", sheet='Performance', range="B16:N157")
+#Need to update range to include most recent data
+aevolume<-read_excel("data/aevol.xls", sheet='Activity', range="B16:N161")
+aewait<-read_excel("data/aevol.xls", sheet='Performance', range="B16:N158")
 
 
 aevolume<-aevolume %>% 
@@ -38,14 +38,7 @@ write_csv(aevolwait, 'aevolwait.csv')
 aevolwait_v2<-aevolwait %>% 
   select(c(monthyear, pct4plusadmitted)) %>% 
   mutate(pct4plusadmitted=pct4plusadmitted*100) %>% 
-  mutate(Metric="Waiting 4+ hours to be admitted (%)") %>% 
-  full_join(aevolwait %>% 
-              select(c(monthyear, total_emergency_admissions)) %>% 
-              mutate(Metric="Total Emergency Admissions")) %>% 
-  mutate(Metric=factor(Metric, levels=c("Waiting 4+ hours to be admitted (%)", "Total Emergency Admissions")))
-
-  
-  
+  mutate(Metric="Waiting 4+ hours to be admitted (%)")
   
 write_csv(aevolwait_v2, 'aevolwait_v2.csv')
 
