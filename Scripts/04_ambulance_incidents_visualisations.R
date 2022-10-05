@@ -278,7 +278,12 @@ amb_dta_incidents_trusts %>%
 
 
 
-#Calculations (England) ----------------------------------------
+#Calculations for write up ----------------------------------------
+
+pre_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2019-03-01'),by='1 month')),"%Y-%m-%d")
+post_dates<-format(as.Date(seq(ymd('2021-04-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(pre_dates, post_dates)
+
 
 #Categories 
 amb_incidents2<-amb_incidents %>% 
@@ -290,14 +295,6 @@ amb_incidents2<-amb_incidents %>%
   mutate(total_cat=c1+c2+c3+c4) %>% 
   mutate(monthyear=format(as.Date(date), "%b %y"))
 
-
-#Calcs for write up
-
-#Calcs
-
-pre_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2019-03-01'),by='1 month')),"%Y-%m-%d")
-post_dates<-format(as.Date(seq(ymd('2021-04-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
-list_dates<-c(pre_dates, post_dates)
 
 calcs<-amb_incidents2 %>%
   filter(as.character(date) %in% list_dates) %>%
@@ -311,59 +308,7 @@ calcs<-amb_incidents2 %>%
          c3_prop=(c3/total_cat)*100,
          c4_prop=(c4/total_cat)*100)
 
-
-
-roll_mean<-amb_incidents2 %>% 
-  mutate(all_incidents_mov_av=rollmean(as.numeric(all_incidents), k=3,fill=NA),
-         c1_mov_av=rollmean(as.numeric(c1), k=3,fill=NA),
-         c2_mov_av=rollmean(as.numeric(c2), k=3,fill=NA),
-         c3_mov_av=rollmean(as.numeric(c3), k=3,fill=NA),
-         c4_mov_av=rollmean(as.numeric(c4), k=3,fill=NA))
-
-
-roll_mean %>%
-  select(c(date, date2, all_incidents:c4)) %>% 
-  pivot_longer(c(all_incidents:c4), names_to="metric", values_to="val") %>% 
-  ggplot(.,aes(x=date2, y=as.numeric(val), group=metric, colour=metric))+
-  geom_line(linetype='solid')+
-  # # geom_point(size=0.25)+
-  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  # facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
-
-roll_mean %>%
-  select(c(date, date2, all_incidents_mov_av:c4_mov_av)) %>% 
-  pivot_longer(c(all_incidents_mov_av:c4_mov_av), names_to="metric", values_to="val") %>% 
-  ggplot(.,aes(x=date2, y=as.numeric(val), group=metric, colour=metric))+
-  geom_line(linetype='solid')+
-  # # geom_point(size=0.25)+
-  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  # facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Incidents", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
+#Data for flourish
 
 prop_incidents<-amb_incidents2 %>% 
   mutate(c1_prop=(as.numeric(c1)/as.numeric(total_cat)*100),
@@ -377,16 +322,6 @@ prop_incidents_v1<-prop_incidents %>%
 
 prop_incidents_v2<-prop_incidents %>% 
   select(date, date2, monthyear, all_incidents)
-
-
-#### save R objects from the environment directly to your s3 bucket
-buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/outputs' ## my bucket name
-
-s3write_using(prop_incidents # What R object we are saving
-              , FUN = write.csv # Which R function we are using to save
-              , object = 'prop_incidents.csv' # Name of the file to save to (include file type)
-              , bucket = buck) # Bucket name defined above
-
 
 prop_incidents %>% 
   select(-c(all_incidents, c1t)) %>% 
@@ -415,9 +350,10 @@ prop_incidents %>%
 coeff=max(prop_incidents$all_incidents)
 ggp1 <- ggplot(prop_incidents) +
   geom_bar(aes(date2, all_incidents), color="gray69", stat="identity", fill="gray69", alpha=.4) +
-  scale_y_continuous(labels=comma)+
+  scale_y_continuous(labels= comma)+
   xlab("") +
   theme(axis.text.x=element_text(angle=90, hjust=1))
+
 ggp1
 ggp2 <- ggp1 +
   geom_line(aes(date2, c1_prop*coeff, group=1), color="red", lwd=0.5, linetype='longdash')
@@ -429,31 +365,6 @@ ggp3 <- ggp2 +
   theme_THF()
 ggp3
 
-t<-as.data.frame(rollmean(prop_incidents$c1_prop,k=12, fill=NA)) %>% 
-  drop_na()
-
-start_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2021-05-01'),by='1 month')),"%Y-%m-%d")
-end_dates<-format(as.Date(seq(ymd('2018-07-01'),ymd('2022-04-01'),by='1 month')),"%Y-%m-%d")
-
-list_dates<-paste0(yearmonth(start_dates),"-",yearmonth(end_dates))
-
-
-t<-cbind(t,list_dates)
-
-v_date<-paste0(yearmonth(format(as.Date(ymd('2018-05-01'),"%Y-%m-%d"))),"-",
-               yearmonth(format(as.Date(ymd('2019-04-01'),"%Y-%m-%d"))))
-w_date<-paste0(yearmonth(format(as.Date(ymd('2019-05-01'),"%Y-%m-%d"))),"-",
-               yearmonth(format(as.Date(ymd('2020-04-01'),"%Y-%m-%d"))))
-x_date<-paste0(yearmonth(format(as.Date(ymd('2020-05-01'),"%Y-%m-%d"))),"-",
-               yearmonth(format(as.Date(ymd('2021-04-01'),"%Y-%m-%d"))))
-y_date<-paste0(yearmonth(format(as.Date(ymd('2021-05-01'),"%Y-%m-%d"))),"-",
-               yearmonth(format(as.Date(ymd('2022-04-01'),"%Y-%m-%d"))))
-
-dates_calcs=c(v_date,w_date, x_date, y_date)
-
-t %>% 
-  filter(list_dates %in% dates_calcs)
-
 #Types
 amb_incidents_type<-amb_incidents %>% 
   filter(org_code=="Eng") %>% 
@@ -461,29 +372,6 @@ amb_incidents_type<-amb_incidents %>%
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
   select(all_incidents:date2)
-
-
-
-#calcs for write up
-pre_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2019-03-01'),by='1 month')),"%Y-%m-%d")
-post_dates<-format(as.Date(seq(ymd('2021-04-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
-list_dates<-c(pre_dates, post_dates)
-
-calcs<-amb_incidents_type %>%
-  filter(as.character(date) %in% list_dates) %>%
-  mutate(time=case_when(as.character(date)  %in% pre_dates ~ "2018/19",
-                        as.character(date) %in% post_dates ~ "2021/22",
-                        TRUE~"NA")) %>%
-  group_by(time) %>%
-  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>% 
-  mutate(hear_treat_prop=(hear_treat/all_incidents)*100,
-         convey_ED_prop=(convey_ED/all_incidents)*100,
-         convey_elsewhere_prop=(convey_elsewhere/all_incidents)*100,
-         see_treat_prop=(see_treat/all_incidents)*100) %>% 
-  mutate(f2f=convey_ED+convey_elsewhere+see_treat) %>% 
-  mutate(f2f_prop=(f2f/all_incidents)*100)
-
-
 
 prop_incidents_types<-amb_incidents_type %>% 
 mutate(total=hear_treat+convey_ED+convey_elsewhere+see_treat) %>% 
@@ -497,129 +385,11 @@ prop_incidents_v3<-prop_incidents_types %>%
   mutate(monthyear=format(as.Date(date), "%b %y")) %>% 
   select(date, date2, monthyear, hear_treat_prop:see_treat_prop)
 
-
-
 incidents_flourish<-prop_incidents_v2 %>% 
   full_join(prop_incidents_v1) %>% 
   full_join(prop_incidents_types)
 
 write.csv(incidents_flourish, "incidents_flourish_full.csv")
-
-write.csv(amb_incidents2, "amb_incidents2.csv")
-
-
-
-coeff=max(prop_incidents_types$total)
-ggp1 <- ggplot(prop_incidents_types)+
-  geom_bar(aes(date2, total), color="gray69", stat="identity", fill="gray69", alpha=.4) +
-  scale_y_continuous(labels=comma)+
-  xlab("") +
-  theme(axis.text.x=element_text(angle=90, hjust=1))
-ggp1
-ggp2 <- ggp1 +
-  geom_line(aes(date2, convey_ED_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')+
-ggp3 <- ggp2 +
-  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage convey to ED incidents (%)")) +
-  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  ggtitle("Incidents") +
-  theme_THF()
-ggp3
-
-
-
-ggp2 <- ggp1 +
-  geom_line(aes(date2, hear_treat_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')
-ggp3 <- ggp2 +
-  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage hear and treat incidents (%)")) +
-  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  ggtitle("Incidents") +
-  theme_THF()
-ggp3
-
-  
-ggp2 <- ggp1 +
-  geom_line(aes(date2, see_treat_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')
-ggp3 <- ggp2 +
-  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage see and treat incidents (%)")) +
-  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  ggtitle("Incidents") +
-  theme_THF()
-ggp3
-
-ggp2 <- ggp1 +
-  geom_line(aes(date2, convey_elsewhere_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')
-ggp3 <- ggp2 +
-  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage convey elsewhere incidents (%)")) +
-  # geom_hline(yintercept = coeff*0.1, colour = '#524c48', linetype='solid', alpha=.4)+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  ggtitle("Incidents") +
-  theme_THF()
-ggp3
-
-
-
-
-ggp2 <- ggp1 +
-  geom_line(aes(date2, convey_ED_prop*coeff, group=1), colour='red', lwd=0.5, linetype='longdash')+
-  geom_line(aes(date2, see_treat_prop*coeff, group=1), colour='blue', lwd=0.5, linetype='longdash')+
-  geom_line(aes(date2, hear_treat_prop*coeff, group=1), colour='purple', lwd=0.5, linetype='longdash')+
-  geom_line(aes(date2, convey_elsewhere_prop*coeff, group=1), colour='orange', lwd=0.5, linetype='longdash')
-  ggp3 <- ggp2 +
-  scale_y_continuous(name="All incidents", labels=comma, sec.axis=sec_axis(~./coeff, name="Percentage incidents (%)")) +
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  ggtitle("Incidents") +
-  labs(caption = "Red= convey to ED, blue= see and treat, purple=hear and treat, orange=convey elsewhere")+
-  theme_THF()
-  ggp3
-
-#rolling counts
-  roll_mean_incidents_types<-amb_incidents_type %>% 
-    mutate(hear_treat_rollmean=rollmean(as.numeric(hear_treat), k=12,fill=NA),
-           convey_ED_rollmean=rollmean(as.numeric(convey_ED), k=12,fill=NA),
-           convey_elsewhere_rollmean=rollmean(as.numeric(convey_elsewhere), k=12,fill=NA),
-           see_treat_rollmean=rollmean(as.numeric(see_treat), k=12,fill=NA)) %>% 
-    drop_na()
-  
-amb_incidents_types_average_plots<-cbind(roll_mean_incidents_types,list_dates,order)
-  
-amb_incidents_types_average_plots<-amb_incidents_types_average_plots %>% 
-    select(c(date, date2, list_dates, order, contains("rollmean"))) %>% 
-    pivot_longer(c(hear_treat_rollmean:see_treat_rollmean), names_to = 'metric', values_to = 'counts') %>% 
-    mutate(name=fct_reorder(list_dates,order)) 
-  
-  
-amb_incidents_types_average_plots %>% 
-    ggplot(.,aes(x=name, y=counts, group=metric, colour=metric))+
-    geom_line(linetype='solid')+
-    scale_y_continuous(labels=comma)+
-    theme_THF()+
-    # facet_grid(cols=vars(met_cat))+
-    scale_colour_THF()+
-    labs(x = "", y="Incidents counts", caption = "NHS England, Ambulance Quality Indicators")+
-    theme(legend.text=element_text(size=11),
-          legend.title = element_blank(),
-          axis.text.x=element_text(size=8, angle=90), 
-          axis.text.y=element_text(size=11),
-          plot.caption = element_markdown(hjust=0, size=9),
-          plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-          legend.margin=margin(0,0,0,0),
-          legend.box.margin=margin(-10,-10,-10,-10))
-  
-  
-
-calcs<- amb_incidents_types_average_plots %>% 
-    filter(list_dates %in% dates_calcs ) %>% 
-    pivot_wider(id_cols=metric,names_from=list_dates, values_from=counts) %>% 
-    clean_names() %>% 
-    mutate(per_change_a_d=((.[[5]]-.[[2]])/.[[2]])*100,
-           per_change_b_d=((.[[5]]-.[[3]])/.[[3]])*100,
-           per_change_c_d=((.[[5]]-.[[4]])/.[[4]])*100)
-
-
-
 
 
 
