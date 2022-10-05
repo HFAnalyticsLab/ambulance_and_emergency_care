@@ -2,7 +2,6 @@
 
 #Libraries 
 library(curl)
-library(tidyverse)
 library(data.table)
 library(here)
 library(aws.s3)
@@ -43,7 +42,7 @@ curl_download(link, destfile = destfile)
  
 #NHS staff sickness rate 
 
-link<-'https://files.digital.nhs.uk/94/5AED3A/ESR_ABSENCE_CSV_NHSE.csv'
+link<-'https://files.digital.nhs.uk/0B/9C9B7F/ESR_ABSENCE_CSV_NHSE.csv'
 
 destfile <- here::here('data', "eng_sickness.csv")
 curl_download(link, destfile = destfile)
@@ -82,9 +81,10 @@ destfile <- here::here('data', "raw2021handovers.xlsx")
 curl_download(link, destfile = destfile)
 
 #A&E admissions and waiting times 
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/08/Adjusted-Monthly-AE-Time-Series-July-2022.xls'
+#Adjusted monthly time series 
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/Adjusted-Monthly-AE-Time-Series-August-2022-1.xls'
 
-destfile <- here::here('data', "aevol.xlx")
+destfile <- here::here('data', "aevol.xls")
 curl_download(link, destfile = destfile)
 
 
