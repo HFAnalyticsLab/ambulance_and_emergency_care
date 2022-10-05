@@ -221,7 +221,7 @@ flourish_sick_ab<-sick_ab %>%
   filter(filter_date %in% list_dates) %>%
   arrange(filter_date) %>% 
   select(-c(X, fte_days_sick, fte_days_available)) %>% 
-  pivot_wider(., names_from=org_type, values_from=sa_rate) %>% 
+  pivot_wider(., names_from=org_type_new, values_from=sa_rate) %>% 
   mutate(monthyear=format(as.Date(date2), "%b %y")) 
   
 write.csv(flourish_sick_ab, 'flourish_staff_sick_ab.csv')
