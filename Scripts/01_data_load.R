@@ -18,7 +18,7 @@ library(janitor)
 
 #Ambulance Quality Indicators 
 
-link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/08/AmbSYS-for-2022-July.csv'
+link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/AmbSYS-for-Aug-2022.csv'
 
 destfile <- here::here('data', "ambsys.csv")
 curl_download(link, destfile = destfile)
