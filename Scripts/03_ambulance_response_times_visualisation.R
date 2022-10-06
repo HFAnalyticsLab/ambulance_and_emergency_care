@@ -344,7 +344,8 @@ amb_dta_flourish<-amb_dta_charts %>%
   select(date, monthyear, org_name, contains("c4_")) %>% 
   pivot_longer(contains("c4_"), names_to="Metric", values_to="C4") %>% 
   mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
-  mutate(Metric= ifelse(Metric=="mean", "Mean", "90th percentile"))
+  mutate(Metric= ifelse(Metric=="mean", "Mean", "90th percentile")) %>% 
+  mutate(org_name=ifelse(org_name=="England", "England (Average of all regions)",org_name))
 
 write.csv(amb_dta_flourish,'amb_dta_resp_charts.csv')
 
