@@ -308,7 +308,10 @@ calcs<-amb_incidents2 %>%
          c3_prop=(c3/total_cat)*100,
          c4_prop=(c4/total_cat)*100)
 
-#Data for flourish
+
+# Data for flourish -------------------------------------------------------
+
+
 
 prop_incidents<-amb_incidents2 %>% 
   mutate(c1_prop=(as.numeric(c1)/as.numeric(total_cat)*100),
