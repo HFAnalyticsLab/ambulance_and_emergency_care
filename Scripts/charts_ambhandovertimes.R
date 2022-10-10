@@ -6,6 +6,15 @@ library(ISOweek)
 
 amball <- readRDS("amball201722.rds")
 
+#Data load
+
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+
+amball<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'amball201722.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
+
 
 date_1<-format(as.Date(seq(ymd('2017-11-20'),ymd('2018-03-04'),by='1 day')),"%Y-%m-%d")
 date_2<-format(as.Date(seq(ymd('2018-12-03'),ymd('2019-03-03'), by='1 day')),"%Y-%m-%d")
@@ -21,7 +30,7 @@ amball <- amball %>%
                         date %in% date_3~ "2019/20",
                         date %in% date_4~ "2020/21",
                         date %in% date_5~ "2021/22"))
-
+#Data for flourish
 summamb <- amball %>%
   drop_na(pctdelay60plus) %>%
   drop_na(pctdelay3060) %>%
@@ -33,40 +42,20 @@ summamb <- amball %>%
   mutate(start_week=format(start_week, "%d %b %y")) %>% 
   ungroup()
   
-order<-c(paste0("W", 47:53),paste0("W0",1:9), paste0("W",10:13))
+write.csv(summamb,'flourish_amb_handovers.csv')
 
-flourish_amb_handover<-summamb %>% 
-  filter(year=="2017/18") %>% 
-  select(c(week, contains("mean"))) %>% 
-  pivot_longer(contains("mean"), names_to="type", values_to="2017/18") %>% 
-  full_join(summamb %>% 
-              filter(year=="2018/19") %>% 
-              select(c(week, contains("mean"))) %>% 
-              pivot_longer(contains("mean"), names_to="type", values_to="2018/19"), by=c("week"="week",
-                                                                                         "type"="type")) %>% 
-  full_join(summamb %>% 
-              filter(year=="2019/20") %>% 
-              select(c(week, contains("mean"))) %>% 
-              pivot_longer(contains("mean"), names_to="type", values_to="2019/20"), by=c("week"="week",
-                                                                                         "type"="type")) %>% 
-  full_join(summamb %>% 
-              filter(year=="2020/21") %>% 
-              select(c(week, contains("mean"))) %>% 
-              pivot_longer(contains("mean"), names_to="type", values_to="2020/21"), by=c("week"="week",
-                                                                                         "type"="type")) %>% 
-  
-  full_join(summamb %>% 
-              filter(year=="2021/22") %>% 
-              select(c(week, contains("mean"))) %>% 
-              pivot_longer(contains("mean"), names_to="type", values_to="2021/22"), by=c("week"="week",
-                                                                                         "type"="type")) %>% 
-  mutate(week=factor(week, levels = order)) %>% 
-  arrange(week)
+#Calcs
 
+calcs<-amball %>% 
+  drop_na(pctdelay60plus) %>%
+  drop_na(pctdelay3060) %>%
+  group_by(year) %>%
+  summarise_if(is.numeric, sum, na.rm = TRUE) %>% 
+  mutate(numdelay30plus=numdelays60plus+numdelays3060, pctdelay30plus=(numdelay30plus/denom)*100,
+         pctdelay60plus=(numdelays60plus/denom)*100,
+         pctdelay3060=(numdelays3060/denom)*100)
 
-
-write.csv(flourish_amb_handover,'flourish_amb_handovers.csv')
-
+write.csv(calcs, 'calcs.csv')
 
 # 
 # # drop months with fewer than 10 observations
