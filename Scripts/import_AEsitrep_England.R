@@ -172,9 +172,7 @@ saveRDS(amball202021, file="amball202021.rds")
 
 x2021handovers<-read_excel("data/raw2021handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:NS17")
 
-ambdelay2<-x2021handovers[2,]
-
-ambdelay <- read_excel("data/2021handovers.xlsx")
+ambdelay<-x2021handovers[2,]
 
 ambdelay_60 <- ambdelay[ , grep("Delay >60", names( ambdelay))]  # keep columns for delays >60 mins
 ambdelay_3060 <- ambdelay[ , grep("Delay 30-60", names( ambdelay))]  # keep columns for delays 30-60 mins
@@ -217,3 +215,13 @@ amball201722 <- rbind(amball201722,amball202021)
 amball201722 <- rbind(amball201722,amball202122)
 
 saveRDS(amball201722, file="amball201722.rds")
+
+
+
+buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
+
+s3write_using(amball201722 # What R object we are saving
+              , FUN = write.csv # Which R function we are using to save
+              , object = 'amball201722.csv' # Name of the file to save to (include file type)
+              , bucket = buck) # Bucket name defined above
+
