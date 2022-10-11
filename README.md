@@ -52,22 +52,22 @@ These scripts were written in R version 4.0.02 and RStudio Workbench Version 1.1
 
 The src folder contains 
  
-*[01_data_load.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/01_data_load.R) - Download data- links need to be updated for the latest data
-*[02_ambulance_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/02_ambulance_data_cleaning.R)- Clean and save ambulance quality indicator variables (including response times, calls and incidents)
-*[03_ambulance_response_times_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/03_ambulance_response_times_visualisation.R) - Visualising ambulance response times
-*[04_ambulance_incidents_visualisations.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/04_ambulance_incidents_visualisations.R) - Visualising number of incidents handled by the ambulance services
-*[05_ambulance_calls_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/05_ambulance_calls_visualisation.R)- Visualising number of calls to the ambulance services
-*[06_workforce_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/06_workforce_data_cleaning.R) - Clean and save workforce variables (includes staff sickness and absence rate)
-*[07_workforce_data_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/07_workforce_data_visualisation.R) - Visualise workforce data including staff sickness and absence rate
-*[08_bed_occupancy_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/08_bed_occupancy_data_cleaning.R) - Clean and save bed occupancy data 
-*[09_bed_occupancy_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/09_bed_occupancy_visualisation.R) - Visualise bed occupancy
-*[10_ambulance_handover_times_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/10_ambulance_handover_times_data_cleaning.R)- Clean and save ambulance handover times data
-*[11_handover_times_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/11_handover_times_visualisation.R) - Visualise ambulance handover times 
-*[12_AE_attendances_data_cleaning_and_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/12_AE_attendances_data_cleaning_and_visualisation.R) - Clean, save and visualise A&E attendances
+* [01_data_load.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/01_data_load.R) - Download data- links need to be updated for the latest data
+* [02_ambulance_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/02_ambulance_data_cleaning.R)- Clean and save ambulance quality indicator variables (including response times, calls and incidents)
+* [03_ambulance_response_times_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/03_ambulance_response_times_visualisation.R) - Visualising ambulance response times
+* [04_ambulance_incidents_visualisations.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/04_ambulance_incidents_visualisations.R) - Visualising number of incidents handled by the ambulance services
+* [05_ambulance_calls_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/05_ambulance_calls_visualisation.R)- Visualising number of calls to the ambulance services
+* [06_workforce_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/06_workforce_data_cleaning.R) - Clean and save workforce variables (includes staff sickness and absence rate)
+* [07_workforce_data_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/07_workforce_data_visualisation.R) - Visualise workforce data including staff sickness and absence rate
+* [08_bed_occupancy_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/08_bed_occupancy_data_cleaning.R) - Clean and save bed occupancy data 
+* [09_bed_occupancy_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/09_bed_occupancy_visualisation.R) - Visualise bed occupancy
+* [10_ambulance_handover_times_data_cleaning.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/10_ambulance_handover_times_data_cleaning.R)- Clean and save ambulance handover times data
+* [11_handover_times_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/11_handover_times_visualisation.R) - Visualise ambulance handover times 
+* [12_AE_attendances_data_cleaning_and_visualisation.R](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/Scripts/12_AE_attendances_data_cleaning_and_visualisation.R) - Clean, save and visualise A&E attendances
 
 ## Authors
-*Anne Alarilla - [Twitter](https://twitter.com/AlarillaAnne) - [GitHub](https://github.com/annealarilla)
-*Mai Stafford - [Twitter](https://twitter.com/stafford_xm) - [GitHub](https://github.com/maistafford)
+* Anne Alarilla - [Twitter](https://twitter.com/AlarillaAnne) - [GitHub](https://github.com/annealarilla)
+* Mai Stafford - [Twitter](https://twitter.com/stafford_xm) - [GitHub](https://github.com/maistafford)
 
 ## License
 
