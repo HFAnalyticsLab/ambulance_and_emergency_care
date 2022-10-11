@@ -1,6 +1,6 @@
 ##Data download
 
-#Libraries 
+#Library 
 library(curl)
 library(data.table)
 library(here)
@@ -8,15 +8,12 @@ library(aws.s3)
 library(janitor)
 
 
-
-
 #Data Download
 
 #Need to create a data folder in your working directory before this can work
 
 
-
-#Ambulance Quality Indicators 
+# Ambulance Quality Indicators ---------------------------------------------
 
 link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/AmbSYS-for-Aug-2022.csv'
 
@@ -25,22 +22,7 @@ curl_download(link, destfile = destfile)
 
 
 
-#NHS workforce statistics 
-
-link<-'https://files.digital.nhs.uk/95/096385/NHS%20Workforce%20Statistics%2C%20February%202022%20England%20and%20Organisation.xlsx'
-
-destfile <- here::here('data', "eng_workforce.xlsx")
-curl_download(link, destfile = destfile)
-
-
-#NHS workforce turnover data
-
-link<-'https://files.digital.nhs.uk/9D/1F78BA/HCHS%20staff%20in%20NHS%20Trusts%20and%20CCGs%20December%202021%20-%20Turnover%20tables.xlsx'
-
-destfile <- here::here('data', "eng_turnover.xlsx")
-curl_download(link, destfile = destfile)
- 
-#NHS staff sickness rate 
+# NHS staff sickness and absence rate -------------------------------------
 
 link<-'https://files.digital.nhs.uk/0B/9C9B7F/ESR_ABSENCE_CSV_NHSE.csv'
 
@@ -48,7 +30,7 @@ destfile <- here::here('data', "eng_sickness.csv")
 curl_download(link, destfile = destfile)
 
 
-#Ambulance handover delays
+# Ambulance handover delays -----------------------------------------------
 
 #2017
 link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2018/03/Winter-data-Timeseries-20180304.xlsx'
@@ -80,7 +62,10 @@ link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/04/
 destfile <- here::here('data', "raw2021handovers.xlsx")
 curl_download(link, destfile = destfile)
 
-#A&E admissions and waiting times 
+
+# A&E admissions and waiting times ----------------------------------------
+
+
 #Adjusted monthly time series 
 link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/Adjusted-Monthly-AE-Time-Series-August-2022-1.xls'
 
@@ -88,17 +73,12 @@ destfile <- here::here('data', "aevol.xls")
 curl_download(link, destfile = destfile)
 
 
-#Overnight bed occupancy 
+# Bed Occupancy -----------------------------------------------------------
+
+#Bed occupancy (Yearly)
 link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/08/Beds-Timeseries-2010-11-onwards-Q1-2022-23-ADJ-for-missings-TRFGH.xls'
 
 destfile <- here::here('data', "overnightbedoccup.xls")
 curl_download(link, destfile = destfile)
 
-
-#Overnight bed occupancy in months
-
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/Beds-publication-Timeseries-March-2020-August-2022.xlsx'
-
-destfile <- here::here('data', "bedoccup_montly.xlsx")
-curl_download(link, destfile = destfile)
 
