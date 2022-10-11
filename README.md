@@ -26,7 +26,7 @@ This repository only includes code for the charts in the above publication and i
 
 ## How does it work? 
 
-This repository outlines how to download the data, process, analyse and visualise the data used in the publication. *The analysis and charts can be reproduced using the latest data by updating the data source links and creating a data folder within your projects folder.* 
+This repository outlines how to download the data, process, analyse and visualise the data used in the publication. **The analysis and charts can be reproduced using the latest data by updating the data source links and creating a data folder within your projects folder.** 
 
 It must be noted that we use AWS S3 cloud storage therefore saving and retrieving files will need to be adapted based on your local storage structure. 
 
