@@ -2,10 +2,8 @@
 
 #Libraries 
 library(curl)
-library(data.table)
 library(here)
 library(aws.s3)
-library(janitor)
 
 
 
