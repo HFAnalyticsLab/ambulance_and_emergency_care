@@ -2,10 +2,8 @@
 
 #Library 
 library(curl)
-library(data.table)
 library(here)
 library(aws.s3)
-library(janitor)
 
 
 #Data Download
@@ -15,7 +13,7 @@ library(janitor)
 
 # Ambulance Quality Indicators ---------------------------------------------
 
-link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/AmbSYS-for-Aug-2022.csv'
+link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/10/AmbSYS-to-Sep22.csv'
 
 destfile <- here::here('data', "ambsys.csv")
 curl_download(link, destfile = destfile)
@@ -67,12 +65,13 @@ curl_download(link, destfile = destfile)
 
 
 #Adjusted monthly time series 
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/09/Adjusted-Monthly-AE-Time-Series-August-2022-1.xls'
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/10/Adjusted-Monthly-AE-Time-Series-September-2022.xls'
 
 destfile <- here::here('data', "aevol.xls")
 curl_download(link, destfile = destfile)
 
 
+<<<<<<< HEAD
 # Bed Occupancy -----------------------------------------------------------
 
 #Bed occupancy (Yearly)
@@ -82,3 +81,12 @@ destfile <- here::here('data', "overnightbedoccup.xls")
 curl_download(link, destfile = destfile)
 
 
+=======
+#Overnight bed occupancy in months
+
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/10/Beds-publication-Timeseries-March-2020-September-2022.xlsx'
+
+destfile <- here::here('data', "bedoccup_montly.xlsx")
+curl_download(link, destfile = destfile)
+
+>>>>>>> d921ea1b35e97e32838757215935f929ff027309
