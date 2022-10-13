@@ -1,3 +1,11 @@
+#Ambulance response times visualisation 
+
+
+# Housekeeping ------------------------------------------------------------
+
+rm(list=ls())
+
+#Library
 library(data.table)
 library(aws.s3)
 library(readr)
@@ -12,202 +20,7 @@ library(tsibble)
 library(ggtext)
 library(plotly)
 
-
-rm(list=ls())
-
-
-
-
-#Data load
-
-buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
-
-
-amb_dta<-s3read_using(read.csv # Which function are we using to read
-                   , object = 'amb_RT_regions.csv' # File to open
-                   , bucket = buck) # Bucket name defined above
-
-
-# Make variables numeric --------------------------------------------------
-
-amb_dta[7:16] = lapply(amb_dta[7:16], FUN = function(y){as.numeric(y)})
-
-
-# Category x Regions -----------------------------------------------------------------
-
-amb_dta_plot<-amb_dta %>% 
- pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
-
-amb_dta_plot<-amb_dta_plot %>% 
-  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
-  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
-  mutate(resp_time2=as_hms(resp_time2)) %>% 
-  mutate(date2=yearmonth(date)) %>% 
-  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
-                                              "Midlands","East of England","London","South East","South West")))
-
-##C1 response times 
-c1<-amb_dta_plot %>%
-  filter(str_detect(metric, 'c1_')) %>%
-  mutate(met_lab=ifelse(metric=="c1_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
-  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
-  geom_line(linetype='solid')+
-  # geom_point(size=0.25)+
-  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
-  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
-ggplotly(c1) %>% 
-  layout(legend = list(orientation = 'h')) %>% 
-  layout(legend=list(title=list(text='')))
-
-##C1T response times
-c1T<-amb_dta_plot %>%
-  filter(str_detect(metric, 'c1T_')) %>%
-  mutate(met_lab=ifelse(metric=="c1T_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
-  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
-  geom_line(linetype='solid')+
-  # geom_point(size=0.25)+
-  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
-  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
-ggplotly(c1T) %>% 
-  layout(legend = list(orientation = 'h')) %>% 
-  layout(legend=list(title=list(text='')))
-
-
-##C2 response times 
-c2<-amb_dta_plot %>%
-  filter(str_detect(metric, 'c2_')) %>%
-  mutate(met_lab=ifelse(metric=="c2_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
-  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
-  geom_line(linetype='solid')+
-  # geom_point(size=0.25)+
-  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
-  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
-ggplotly(c2) %>% 
-  layout(legend = list(orientation = 'h')) %>% 
-  layout(legend=list(title=list(text='')))
-
-##C3 
-c3<-amb_dta_plot %>%
-  filter(str_detect(metric, 'c3_')) %>%
-  mutate(met_lab=ifelse(metric=="c3_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
-  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
-  geom_line(linetype='solid')+
-  # geom_point(size=0.25)+
-  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
-  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
-ggplotly(c3) %>% 
-  layout(legend = list(orientation = 'h')) %>% 
-  layout(legend=list(title=list(text='')))
-
-
-##C4
-c4<-amb_dta_plot %>%
-  filter(str_detect(metric, 'c4_')) %>%
-  mutate(met_lab=ifelse(metric=="c4_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
-  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
-  geom_line(linetype='solid')+
-  # geom_point(size=0.25)+
-  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
-  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10),
-        strip.text.x = element_text(size = 6))
-
-ggplotly(c4) %>% 
-  layout(legend = list(orientation = 'h')) %>% 
-  layout(legend=list(title=list(text=''))) 
-
-
-
-# Split by Regions ----------------------------------------------------
-
-
-#Data load
-
-buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
-
-
-amb_dta<-s3read_using(read.csv # Which function are we using to read
-                      , object = 'amb_RT_regions.csv' # File to open
-                      , bucket = buck) # Bucket name defined above
-
-amb_dta_plot<-amb_dta %>% 
-  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
-
-amb_dta_plot<-amb_dta_plot %>% 
-  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
-  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
-  mutate(resp_time2=as_hms(resp_time2)) %>% 
-  mutate(date2=yearmonth(date)) %>% 
-  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
-                                           "Midlands","East of England","London","South East","South West")))
+#Functions
 
 trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   aaa <- ggplot2::enquo(var.x)
@@ -242,125 +55,54 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   plot
 }
 
-
-
-trends_graph(var.x="England")
-
-
-
-
-# Category x Trusts ------------------------------------------------------------------
-
-#Data load
+# Data load ---------------------------------------------------------------
 
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
 
-
-amb_dta_trusts<-s3read_using(read.csv # Which function are we using to read
-                      , object = 'amb_RT_trusts.csv' # File to open
-                      , bucket = buck) # Bucket name defined above
-
-
-amb_dta_plot<-amb_dta_trusts %>% 
-  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time') %>% 
-  filter(org_name != "WEST MIDLANDS AMBULANCE SERVICE NHS FOUNDATION TRUST")
+amb_dta<-s3read_using(read.csv # Which function are we using to read
+                   , object = 'amb_RT_regions.csv' # File to open
+                   , bucket = buck) # Bucket name defined above
 
 
-long_names<-c("England", "EAST MIDLANDS AMBULANCE SERVICE NHS TRUST", "EAST OF ENGLAND AMBULANCE SERVICE NHS TRUST" ,"ISLE OF WIGHT NHS TRUST",                                        
-              "LONDON AMBULANCE SERVICE NHS TRUST", "NORTH EAST AMBULANCE SERVICE NHS FOUNDATION TRUST", "NORTH WEST AMBULANCE SERVICE NHS TRUST",                         
-              "SOUTH CENTRAL AMBULANCE SERVICE NHS FOUNDATION TRUST", "SOUTH EAST COAST AMBULANCE SERVICE NHS FOUNDATION TRUST", "SOUTH WESTERN AMBULANCE SERVICE NHS FOUNDATION TRUST",
-              "WEST MIDLANDS AMBULANCE SERVICE UNIVERSITY NHS FOUNDATION TRUST", "YORKSHIRE AMBULANCE SERVICE NHS TRUST") 
+# Format data --------------------------------------------------
 
+#Make columns numeric
+amb_dta[7:16] = lapply(amb_dta[7:16], FUN = function(y){as.numeric(y)})
 
-label_names<-c("England", "East Midlands", "East of England" ,"Isle of Wight",                                        
-               "London", "North East", "North West",                         
-               "South Central", "South East Coast", "South Western",
-               "West Midlands", "Yorkshire") 
-
+amb_dta_plot<-amb_dta %>% 
+  pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
 
 amb_dta_plot<-amb_dta_plot %>% 
   mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
   mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
   mutate(resp_time2=as_hms(resp_time2)) %>% 
-  mutate(date2=yearmonth(date)) %>%
-  mutate(org_lab=factor(org_name, levels=long_names, labels=label_names))
+  mutate(date2=yearmonth(date)) %>% 
+  mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
+                                           "Midlands","East of England","London","South East","South West")))
+
+# Visualise response times by regions -------------------------------------
+
+vars<-list() # create empty list to add to
+for (j in seq_along(unique(amb_dta_plot$org_lab))) {
+  vars[[j]] <-unique(amb_dta_plot$org_lab)[j]
+}
+
+g<-lapply(vars[1:length(vars)],trends_graph,data=amb_dta_plot)
+
+g
 
 
-amb_dta_plot %>%
-  filter(str_detect(metric, 'c1_')) %>%
-  mutate(met_lab=ifelse(metric=="c1_mean", "Mean (min:sec)", "90th centile (min:sec)")) %>% 
-  ggplot(.,aes(x=date2, y=resp_time2, group=met_lab, colour=met_lab))+
-  geom_line(linetype='solid')+
-  # geom_point(size=0.25)+
-  geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
-  geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  facet_grid(cols=vars(org_lab))+
-  scale_colour_THF()+
-  labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
+# Calculations for average response times ---------------------------------
 
-ggplotly(c4) %>% 
-  layout(legend = list(orientation = 'h')) %>% 
-  layout(legend=list(title=list(text=''))) 
-
-
-
-# By each trust ----------------------------------------------------------
-
-trends_graph(var.x=label_names[4])
-
-
-
-
-# Data for flourish -------------------------------------------------------
-
-amb_dta_charts<-amb_dta %>% 
-  mutate(monthyear=format(as.Date(date), "%b %y"))
-
-amb_dta_charts[7:16] = lapply(amb_dta_charts[7:16], FUN = function(y){as.numeric((y))/60})
-
-amb_dta_flourish<-amb_dta_charts %>% 
-  select(date, monthyear, org_name, contains("c1_")) %>% 
-  pivot_longer(contains("c1_"), names_to="Metric", values_to="C1") %>% 
-  mutate(Metric=substr(Metric, 4,str_length(Metric))) %>% 
-  left_join(amb_dta_charts %>% 
-              select(date, monthyear, org_name, contains("c2_")) %>% 
-              pivot_longer(contains("c2_"), names_to="Metric", values_to="C2") %>% 
-              mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
-  left_join(amb_dta_charts %>% 
-  select(date, monthyear, org_name, contains("c3_")) %>% 
-  pivot_longer(contains("c3_"), names_to="Metric", values_to="C3") %>% 
-  mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
-  left_join(amb_dta_charts %>% 
-  select(date, monthyear, org_name, contains("c4_")) %>% 
-  pivot_longer(contains("c4_"), names_to="Metric", values_to="C4") %>% 
-  mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
-  mutate(Metric= ifelse(Metric=="mean", "Mean", "90th percentile")) %>% 
-  mutate(org_name=ifelse(org_name=="England", "England (Average of all regions)",org_name))
-
-write.csv(amb_dta_flourish,'amb_dta_resp_charts.csv')
-
-
-#Calculations for average time
-
+#Date ranges
 pre_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2019-03-01'),by='1 month')),"%Y-%m-%d")
 post_dates<-format(as.Date(seq(ymd('2021-04-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
 list_dates<-c(pre_dates, post_dates)
 
-
-
+#Load data 
 amb_dta<-read_csv(here::here('data', "ambsys.csv"))
 
-#select relevant columns 
+#Select and format relevant columns 
 amb_dta_clean<-amb_dta %>% 
   clean_names() %>% 
   select(year:org_name, paste0("a",c(8,10:12,24,30,33,36))) %>% 
@@ -383,6 +125,9 @@ calcs<-amb_dta_clean %>%
   mutate(resp_time2=as.POSIXct(as.numeric(mean_resptime),origin = "1970-01-01", tz="GMT")) %>% 
   mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
   mutate(resp_time2=as_hms(resp_time2)) 
+
+calcs 
+
   
   
   
