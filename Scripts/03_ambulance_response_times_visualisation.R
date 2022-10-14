@@ -16,9 +16,9 @@ library(ggplot2)
 library(hms)
 library(tidyverse)
 library(THFstyle)
-library(tsibble)
 library(ggtext)
 library(plotly)
+library(stringr)
 
 #Functions
 
@@ -27,12 +27,14 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   # bbb <- ggplot2::enquo(var.y)
   plot <-  data %>%
     filter(org_lab==!!aaa) %>%
-    mutate(met_group=substr(metric,0,3)) %>% 
+    mutate(met_group=substr(metric,0,2)) %>% 
+    mutate(met_group=factor(met_group, levels=c("c1", "c2", "c3", "c4"),
+                            labels=c("Category 1","Category 2", "Category 3", "Category 4"))) %>% 
     mutate(met_cat=ifelse(str_detect(metric,'mean'),'Mean','90th centile')) %>% 
     mutate(met_cat=factor(met_cat, levels=c('Mean', '90th centile'))) %>% 
     mutate(met_lab=ifelse(str_detect(metric, 'mean'), paste(met_group,"_Mean (hours:min:sec)")
                           ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
-    ggplot(.,aes(x=date2, y=resp_time2, group=met_group, colour=met_group))+
+    ggplot(.,aes(x=date, y=resp_time2, group=met_group, colour=met_group))+
     geom_line(aes(linetype=met_cat))+
     # geom_point(size=0.25)+
     # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
@@ -55,6 +57,9 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
   plot
 }
 
+#Does not contain to be used for filter 
+`%notin%` <- Negate(`%in%`)
+
 # Data load ---------------------------------------------------------------
 
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
@@ -69,19 +74,25 @@ amb_dta<-s3read_using(read.csv # Which function are we using to read
 #Make columns numeric
 amb_dta[7:16] = lapply(amb_dta[7:16], FUN = function(y){as.numeric(y)})
 
-amb_dta_plot<-amb_dta %>% 
+amb_dta_plot<-amb_dta %>%
   pivot_longer(c(c1_mean:c4_90thcent), names_to = 'metric', values_to = 'resp_time')
 
 amb_dta_plot<-amb_dta_plot %>% 
   mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
   mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
   mutate(resp_time2=as_hms(resp_time2)) %>% 
-  mutate(date2=yearmonth(date)) %>% 
   mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
-                                           "Midlands","East of England","London","South East","South West")))
+                                           "Midlands","East of England","London","South East","South West"))) %>% 
+  filter(!str_detect(metric, "c1T"))
 
+filter_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2018-03-01'),by='1 month')),"%Y-%m-%d")
+
+amb_dta_plot<-amb_dta_plot %>% 
+  filter(date %notin% filter_dates)
+  
 # Visualise response times by regions -------------------------------------
 
+#Figure 1 
 vars<-list() # create empty list to add to
 for (j in seq_along(unique(amb_dta_plot$org_lab))) {
   vars[[j]] <-unique(amb_dta_plot$org_lab)[j]
@@ -90,6 +101,37 @@ for (j in seq_along(unique(amb_dta_plot$org_lab))) {
 g<-lapply(vars[1:length(vars)],trends_graph,data=amb_dta_plot)
 
 g
+
+
+# Data for flourish -------------------------------------------------------
+
+amb_dta_charts<-amb_dta %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y"))
+
+amb_dta_charts[7:16] = lapply(amb_dta_charts[7:16], FUN = function(y){as.numeric((y))/60})
+
+amb_dta_flourish<-amb_dta_charts %>% 
+  select(date, monthyear, org_name, contains("c1_")) %>% 
+  pivot_longer(contains("c1_"), names_to="Metric", values_to="C1") %>% 
+  mutate(Metric=substr(Metric, 4,str_length(Metric))) %>% 
+  left_join(amb_dta_charts %>% 
+              select(date, monthyear, org_name, contains("c2_")) %>% 
+              pivot_longer(contains("c2_"), names_to="Metric", values_to="C2") %>% 
+              mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
+  left_join(amb_dta_charts %>% 
+              select(date, monthyear, org_name, contains("c3_")) %>% 
+              pivot_longer(contains("c3_"), names_to="Metric", values_to="C3") %>% 
+              mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
+  left_join(amb_dta_charts %>% 
+              select(date, monthyear, org_name, contains("c4_")) %>% 
+              pivot_longer(contains("c4_"), names_to="Metric", values_to="C4") %>% 
+              mutate(Metric=substr(Metric, 4,str_length(Metric)))) %>% 
+  mutate(Metric= ifelse(Metric=="mean", "Mean", "90th percentile")) %>% 
+  mutate(org_name=ifelse(org_name=="England", "England (Average of all regions)", org_name)) %>% 
+  rename("Category 1"= "C1","Category 2"= "C2", "Category 3"= "C3", "Category 4"= "C4") %>% 
+  filter(date %notin% filter_dates)
+
+write.csv(amb_dta_flourish,'amb_dta_resp_charts.csv')
 
 
 # Calculations for average response times ---------------------------------
@@ -128,6 +170,5 @@ calcs<-amb_dta_clean %>%
 
 calcs 
 
-  
-  
-  
+
+
