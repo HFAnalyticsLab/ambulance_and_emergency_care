@@ -11,7 +11,6 @@ library(aws.s3)
 library(janitor)
 library(readxl)
 library(dplyr)
-library(tsibble)
 
 
 # Load data ---------------------------------------------------------------

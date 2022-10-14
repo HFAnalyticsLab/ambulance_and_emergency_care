@@ -14,14 +14,17 @@ library(rio)
 library(lubridate)
 library(ggplot2)
 library(hms)
-library(tsibble)
 library(tidyverse)
 library(THFstyle)
 library(fpp2)
 library(zoo)
-library(scales)
 library(ggtext)
 library(plotly)
+
+#Functions
+
+#Does not contain to be used for filter 
+`%notin%` <- Negate(`%in%`)
 
 
 # Data load ---------------------------------------------------------------
@@ -43,17 +46,21 @@ amb_incidents_type<-amb_incidents %>%
   filter(org_code=="Eng") %>% 
   select(c(year:all_incidents,hear_treat:date)) %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
-  mutate(date2=yearmonth(date)) %>% 
-  select(all_incidents:date2)
+  select(all_incidents:date)
+
+filter_dates<-as.Date(seq(ymd('2017-08-01'),ymd('2018-03-01'),by='1 month'), format="%Y-%m-%d")
+
+amb_incidents_type<-amb_incidents_type %>% 
+  dplyr::filter(date %notin% filter_dates)
 
 
 plot<-amb_incidents_type %>% 
-  select(-c(all_incidents, date)) %>% 
+  select(-c(all_incidents)) %>% 
   pivot_longer(hear_treat:see_treat, names_to='metric', values_to='val') %>% 
   mutate(metric=factor(metric, levels=c("hear_treat","convey_ED","convey_elsewhere","see_treat"),
                        labels=c("Hear and treat","Convey to emergency department",
                                 "Convey elsewhere", "See and treat"))) %>% 
-  ggplot(.,aes(x=date2, y=as.numeric(val), fill=metric, order=val))+
+  ggplot(.,aes(x=date, y=as.numeric(val), fill=metric, order=val))+
   geom_area(position=position_stack(reverse=TRUE))+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
@@ -78,6 +85,19 @@ ggplotly(plot) %>%
 
 
 #Proportion of category 1-4 incidents, figure 3b
+
+amb_incidents2<-amb_incidents %>% 
+  filter(org_code=="Eng") %>% 
+  select(c(year:c4,date)) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  select(all_incidents:date) %>% 
+  mutate(total_cat=c1+c2+c3+c4) %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y")) %>% 
+  dplyr::filter(date %notin% filter_dates)
+
+
+
+
 prop_incidents<-amb_incidents2 %>% 
   mutate(c1_prop=(as.numeric(c1)/as.numeric(total_cat)*100),
          c2_prop=(as.numeric(c2)/as.numeric(total_cat)*100),
@@ -86,15 +106,19 @@ prop_incidents<-amb_incidents2 %>%
 
 
 prop_incidents_v1<-prop_incidents %>% 
-  select(date, date2, monthyear, c1_prop:c4_prop)
+  select(date, monthyear, c1_prop:c4_prop)
 
 prop_incidents_v2<-prop_incidents %>% 
-  select(date, date2, monthyear, all_incidents)
+  select(date, monthyear, all_incidents)
+
+
 
 plot<-prop_incidents %>% 
   select(-c(all_incidents, c1t)) %>% 
   pivot_longer(c1_prop:c4_prop, names_to='metric', values_to='val') %>% 
-  ggplot(.,aes(x=date2, y=as.numeric(val), fill=metric))+
+  mutate(met_lab=factor(metric, levels=c("c1_prop", "c2_prop", "c3_prop", "c4_prop"),
+                           labels=c("Category 1", "Category 2", "Category 3", "Category 4"))) %>% 
+  ggplot(.,aes(x=date, y=as.numeric(val), fill=met_lab))+
   geom_area(position=position_fill(reverse=TRUE))+
   # # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="fill", stat="identity")+
@@ -130,11 +154,12 @@ mutate(total=hear_treat+convey_ED+convey_elsewhere+see_treat) %>%
 
 prop_incidents_v3<-prop_incidents_types %>% 
   mutate(monthyear=format(as.Date(date), "%b %y")) %>% 
-  select(date, date2, monthyear, hear_treat_prop:see_treat_prop)
+  select(date, monthyear, hear_treat_prop:see_treat_prop)
 
 incidents_flourish<-prop_incidents_v2 %>% 
   full_join(prop_incidents_v1) %>% 
-  full_join(prop_incidents_types)
+  full_join(prop_incidents_types) %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y"))
 
 write.csv(incidents_flourish, "incidents_flourish_full.csv")
 
@@ -148,8 +173,7 @@ amb_incidents2<-amb_incidents %>%
   filter(org_code=="Eng") %>% 
   select(c(year:c4,date)) %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
-  mutate(date2=yearmonth(date)) %>% 
-  select(all_incidents:date2) %>% 
+  select(all_incidents:date) %>% 
   mutate(total_cat=c1+c2+c3+c4) %>% 
   mutate(monthyear=format(as.Date(date), "%b %y"))
 
@@ -168,3 +192,5 @@ calcs<-amb_incidents2 %>%
 
 
 calcs
+
+

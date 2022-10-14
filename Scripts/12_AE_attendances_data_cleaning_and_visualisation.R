@@ -5,8 +5,8 @@ library(tidyverse)
 library(lubridate)
 
 #Need to update range to include most recent data
-aevolume<-read_excel("data/aevol.xls", sheet='Activity', range="B16:N161")
-aewait<-read_excel("data/aevol.xls", sheet='Performance', range="B16:N158")
+aevolume<-read_excel("data/aevol.xls", sheet='Activity', range="B16:N162")
+aewait<-read_excel("data/aevol.xls", sheet='Performance', range="B16:N159")
 
 
 aevolume<-aevolume %>% 

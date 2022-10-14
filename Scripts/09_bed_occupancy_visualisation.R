@@ -1,68 +1,52 @@
+#Bed occupancy 
+
+
+# Housekeeping ------------------------------------------------------------
+
+rm(list=ls())
+
+#Library
 library(aws.s3)
 library(tidyverse)
 library(ggplot2)
 
-## national analysis
-England_overnightbeds <- readRDS("England_overnightbeds.Rds")
-
-England_overnightbeds <- England_overnightbeds %>%
-  mutate(time=paste0(Year,Period)) %>%
-  mutate(pctoccuptot=as.numeric(Total...14)) %>%
-  mutate(pctoccupgenacute=as.numeric(`General & Acute...15`))
 
 
-ggplot() +
-  geom_line(mapping=aes(x=England_overnightbeds$time, y=England_overnightbeds$pctoccuptot), color="blue", group=1) +
-  geom_line(mapping=aes(x=England_overnightbeds$time, y=England_overnightbeds$pctoccupgenacute), color="red", group=1) +
-  ggtitle("Beds occupied 2010-2021") + 
-  ylab("% occupied") +
-  xlab("Year and quarter") +
-  theme(axis.text.x=element_text(angle=90, hjust=1)) +
-  ggtitle("blue = All beds, red=General & Acute beds") +
-  ylim(0.5,1.0)
+# Load data ---------------------------------------------------------------
+buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
+
+England_overnightbeds<-s3read_using(read.csv # Which function are we using to read
+                      , object = 'bedoccup_monthly_clean.csv' # File to open
+                      , bucket = buck) # Bucket name defined above
 
 
-## regional analysis
-bedoccup <- readRDS("ambulance/bedoccup.rds")
 
-bedoccup <- bedoccup %>%
-  mutate(timeyr=substr(Year,1,4)) %>%
-  mutate(timeyr=as.numeric(timeyr)) %>%
-  mutate(timeqtr=ifelse(`Period End`=="June", 1,
-                        ifelse(`Period End`=="December",3,
-                               ifelse(`Period End`=="March",4,2)))) %>%
-  mutate(time=paste0(timeyr,timeqtr)) %>%
-  mutate(timenum=as.numeric(time)) %>%
-  mutate(pctoccuptot=as.numeric(Total...18))
+# Visualisation -----------------------------------------------------------
+#Monthly data 
 
-bedoccup2019_2021 <- filter(bedoccup, timenum>20184)
-bedoccup2019_2021$`Region Code` <- factor(bedoccup2019_2021$`Region Code`, labels=c("London", "Southwest", "Southeast", "Midlands", "East", "Northwest", "Northeast"))
-mytable <- table(bedoccup2019_2021$time)
-mytable
+plot<-England_overnightbeds %>% 
+  ggplot(.,aes(x=date2, y=unoccup, group=1))+
+  geom_line(linetype='solid', colour='#dd0031')+
+  # geom_point(size=0.25)+
+  # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
+  # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  theme_THF()+
+  scale_y_continuous(labels= scales::comma )+
+  # facet_grid(cols=vars(org_lab))+
+  labs(x = "", y="Number of unoccupied beds", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
 
-aggregate(bedoccup2019_2021$pctoccuptot, list(bedoccup2019_2021$`Region Code`), FUN=mean, na.rm=TRUE)
+ggplotly(plot) %>% 
+  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
+  layout(legend=list(title=list(text=''))) 
 
-summocc <- bedoccup2019_2021 %>%
-  drop_na(pctoccuptot) %>%
-  group_by(`Region Code`, time) %>%
-  summarise(meanoccup=mean(pctoccuptot), n=n())
-
-ggplot(data=summocc, aes(x=time, y=meanoccup, group=`Region Code`)) +
-  geom_line(aes(linetype=`Region Code`, colour=`Region Code`)) +
-  ylim(0.5,1.0)
-
-
-bedoccup2015_2017 <- filter(bedoccup, timenum<20181 & timenum>20144)
-bedoccup2015_2017$`Region Code` <- factor(bedoccup2015_2017$`Region Code`, labels=c("North", "Mids & East", "London", "South"))
-
-aggregate(bedoccup2015_2017$pctoccuptot, list(bedoccup2015_2017$`Region Code`), FUN=mean, na.rm=TRUE)
-
-summocc <- bedoccup2015_2017 %>%
-  drop_na(pctoccuptot) %>%
-  group_by(`Region Code`, time) %>%
-  summarise(meanoccup=mean(pctoccuptot), n=n())
-ggplot(data=summocc, aes(x=time, y=meanoccup, group=`Region Code`)) +
-  geom_line(aes(linetype=`Region Code`, colour=`Region Code`)) +
-  ylim(0.5,1.0)
 
 

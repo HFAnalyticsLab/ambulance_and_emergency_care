@@ -85,7 +85,7 @@ amb_dta_plot<-amb_dta_plot %>%
                                            "Midlands","East of England","London","South East","South West"))) %>% 
   filter(!str_detect(metric, "c1T"))
 
-filter_dates<-format(as.Date(seq(ymd('2017-08-01'),ymd('2018-03-01'),by='1 month')),"%Y-%m-%d")
+filter_dates<-as.Date(seq(ymd('2017-08-01'),ymd('2018-03-01'),by='1 month'), format="%Y-%m-%d")
 
 amb_dta_plot<-amb_dta_plot %>% 
   filter(date %notin% filter_dates)

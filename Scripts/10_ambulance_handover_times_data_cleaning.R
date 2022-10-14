@@ -1,4 +1,8 @@
+#Ambulance handover delays- data cleaning 
 
+# Housekeeping ------------------------------------------------------------
+
+#Library
 library(aws.s3)
 library(readxl)
 library(tidyverse)
@@ -7,6 +11,7 @@ library(stringr)
 library(ISOweek)
 
 
+# 2017 --------------------------------------------------------------------
 
 x2017handovers<-read_excel("data/raw2017handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:LH16")
 
@@ -48,6 +53,7 @@ amball201718 <- amball %>%
 saveRDS(amball201718, file="amball201718.rds")
 
 
+# 2018 --------------------------------------------------------------------
 
 x2018handovers<-read_excel("data/raw2018handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:JR16")
 
@@ -90,6 +96,9 @@ amball201819 <- amball %>%
 saveRDS(amball201819, file="amball201819.rds")
 
 
+# 2019 --------------------------------------------------------------------
+
+
 x2019handovers<-read_excel("data/raw2019handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:JR16")
 
 ambdelay <- x2019handovers
@@ -130,7 +139,8 @@ amball201920 <- amball %>%
 saveRDS(amball201920, file="amball201920.rds")
 
 
-
+# 2020 --------------------------------------------------------------------
+ 
 x2020handovers<-read_excel("data/raw2020handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:NS17")
 
 ambdelay<-x2020handovers[2,]
@@ -169,6 +179,9 @@ amball202021 <- amball %>%
 
 
 saveRDS(amball202021, file="amball202021.rds")
+
+
+# 2021 --------------------------------------------------------------------
 
 x2021handovers<-read_excel("data/raw2021handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="F15:NS17")
 
@@ -209,15 +222,18 @@ amball202122 <- amball %>%
 
 saveRDS(amball202122, file="amball202122.rds")
 
+
+# Combine data ------------------------------------------------------------
+
+
 amball201722 <- rbind(amball201718,amball201819)
 amball201722 <- rbind(amball201722,amball201920)
 amball201722 <- rbind(amball201722,amball202021)
 amball201722 <- rbind(amball201722,amball202122)
 
-saveRDS(amball201722, file="amball201722.rds")
+#saveRDS(amball201722, file="amball201722.rds")
 
-
-
+#Save data
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
 
 s3write_using(amball201722 # What R object we are saving
