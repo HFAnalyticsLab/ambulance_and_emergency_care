@@ -10,6 +10,7 @@ library(aws.s3)
 library(tidyverse)
 library(ggplot2)
 library(ISOweek)
+library(ggh4x)
 
 
 # Data load ---------------------------------------------------------------
@@ -54,9 +55,11 @@ summamb <- amball %>%
   select(c(start_week,date2, year,mean60plus,mean3060,mean30plus, n)) %>% 
   distinct() %>% 
   mutate(week=str_sub(date2,6,8)) %>% 
-  mutate(start_week=format(start_week, "%d %b %y")) %>% 
-  ungroup()
-  
+  ungroup() %>% 
+  mutate(start_week_lab=format(as.Date(start_week), "%d %b %y")) %>% 
+  mutate(monthyear=format(start_week, "%b %y")) 
+         
+#mutate(start_week=format(as.Date(start_week), "%d %b %y")) %>% 
 #write.csv(summamb,'flourish_amb_handovers.csv')
 
 # Calculations- summary of handover delays by years -----------------------
@@ -73,29 +76,29 @@ calcs<-amball %>%
 write.csv(calcs, 'calcs.csv')
 
 
-
 # Visualise data ----------------------------------------------------------
 
-plot<-summamb %>% 
-  select(start_week, year, mean60plus, mean3060) %>% 
+plot_data<-summamb %>% 
+  select(monthyear,start_week, start_week_lab, year, mean60plus, mean3060) %>% 
   pivot_longer(mean60plus:mean3060,names_to="metric", values_to="prop") %>% 
   mutate(met_lab=factor(metric, levels=c("mean3060", "mean60plus"), 
-                        labels=c("Handovers within 30-60 mins(%)", "Handovers taking more than 60 mins(%)"))) %>% 
-  ggplot(.,aes(x=start_week, y=as.numeric(prop), fill=met_lab, colour=met_lab))+
-  # scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+                        labels=c("Handovers within 30-60 mins(%)", "Handovers taking more than 60 mins(%)")))
+plot_data %>% 
+  ggplot(.,aes(x=start_week, y=as.numeric(prop), fill=met_lab,  group=met_lab, order=met_lab))+
+  geom_area(position=position_stack(reverse=TRUE))+
+  # scale_x_yearmonth(breaks = '1 month',date_labels = "%b %g")+
+  # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
+  # scale_x_discrete(labels=unique(plot_data$monthyear))+
   theme_THF()+
-  facet_grid(cols=vars(year))+
-  scale_fill_THF()+
-  # scale_y_continuous()+
-  labs(x = "", y="Handovers over 30 mins", caption = "")+
+  facet_grid2(cols=vars(year), scales="free")+
+  scale_fill_manual(values=c('#53a9cd','#dd0031'))+
+  labs(x = "", y="Handovers over 30 mins (%)", caption = "")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
+        # axis.text.x = element_blank(),
+        axis.text.x=element_text(size=5, angle=90),
         axis.text.y=element_text(size=11),
         plot.caption = element_markdown(hjust=0, size=9),
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
-
-
-  
