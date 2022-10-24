@@ -8,7 +8,7 @@ Ambulance services are under immense pressure. This analysis looks at ambulance 
 
 ## Outputs
 
-The findings will be published as Health Foundation long chart
+The findings will be published as a Health Foundation long chart
 
 ## Data sources:
 
