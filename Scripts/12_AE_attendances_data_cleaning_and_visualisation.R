@@ -42,32 +42,9 @@ aevolwait_v2<-aevolwait %>%
   
 write_csv(aevolwait_v2, 'aevolwait_v2.csv')
 
-## Chart AE attendances
-coeff=max(aevolwait$type_1_departments_major_a_e)
-ggp1 <- ggplot(data=aevolwait) +
-  geom_bar(aes(x=monthyear, y=type_1_departments_major_a_e), colour="blue", stat="identity") +
-  xlab("Year and quarter") +
-  theme(axis.text.x=element_text(angle=90, hjust=1))
-ggp2 <- ggp1 + 
-  geom_line(aes(monthyear, aewait4plus*coeff, group=1), color="red", lwd=2)
-ggp3 <- ggp2 +
-  scale_y_continuous(name="Number of A&E attendances", sec.axis=sec_axis(~./coeff, name="Proportion in A&E 4+ hours")) 
-ggp3
 
-## Chart emergency admissions
-coeff=max(aevolwait$total_emergency_admissions)
-ggp1 <- ggplot(aevolwait) +
-  geom_bar(aes(x=monthyear, y=total_emergency_admissions), color="blue", stat="identity") +
-  xlab("Year and quarter") +
-  theme(axis.text.x=element_text(angle=90, hjust=1))
-ggp2 <- ggp1 +
-  geom_line(aes(monthyear, pct4plusadmitted*coeff, group=1), color="red", lwd=2 ) 
-ggp3 <- ggp2 +
-  scale_y_continuous(labels=scales::comma, name="Number of emergency admissions", sec.axis=sec_axis(~./coeff, name="Proportion waiting 4+ hours to be admitted")) 
-ggp3
-
-
-plot<-aevolwait_v2%>% 
+plot<-aevolwait%>% 
+  select(c(Period, monthyear, pct4plusadmitted)) %>% 
   ggplot(.,aes(x=Period, y=pct4plusadmitted, group=1))+
   geom_line(colour='#dd0031')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
@@ -89,28 +66,4 @@ plot<-aevolwait_v2%>%
 ggplotly(plot) %>% 
   layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
   layout(legend=list(title=list(text=''))) 
-
-plot<-aevolwait_v2%>% 
-  ggplot(.,aes(x=Period, y=pct4plusadmitted, group=1))+
-  geom_line(colour='#dd0031')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
-  theme_THF()+
-  # facet_grid(cols=vars(org_lab))+
-  # scale_colour_THF()+
-  scale_y_continuous(labels = scales::percent)+
-  labs(x = "", y="Proportion of patients waiting 4+ hours to be admitted (%)", caption = "A&E data")+
-  theme(legend.text=element_text(size=11),
-        legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
-        axis.text.y=element_text(size=11),
-        plot.caption = element_markdown(hjust=0, size=9),
-        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
-        legend.margin=margin(0,0,0,0),
-        legend.box.margin=margin(-10,-10,-10,-10))
-
-
-ggplotly(plot) %>% 
-  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
-  layout(legend=list(title=list(text=''))) 
-
 
