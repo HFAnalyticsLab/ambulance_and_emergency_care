@@ -36,6 +36,10 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
                           ,paste(met_group,"_90th centile (hours:min:sec)"))) %>% 
     ggplot(.,aes(x=date, y=resp_time2, group=met_group, colour=met_group))+
     geom_line(aes(linetype=met_cat))+
+    annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
+             ymin=0, ymax=max(data$resp_time),fill="grey20", alpha=.1)+
+    annotate("richtext",x=as.Date("2020-03-01"), y=(max(data$resp_time)-4000), 
+             label= "First two waves <br> of COVID-19", size=3, colour="black",hjust=0, fill=NA, label.color=NA)+
     # geom_point(size=0.25)+
     # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
     # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
@@ -88,8 +92,10 @@ amb_dta_plot<-amb_dta_plot %>%
 filter_dates<-as.Date(seq(ymd('2017-08-01'),ymd('2018-03-01'),by='1 month'), format="%Y-%m-%d")
 
 amb_dta_plot<-amb_dta_plot %>% 
-  filter(date %notin% filter_dates)
-  
+  filter(as.Date(date) %notin% filter_dates)
+
+
+
 # Visualise response times by regions -------------------------------------
 
 #Figure 1 
@@ -157,6 +163,13 @@ amb_dta_clean<-amb_dta %>%
 
 amb_dta_clean[6:13] = lapply(amb_dta_clean[6:13], FUN = function(y){as.numeric(y)})
 
+amb_dta_clean<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(8,10:12,24,30,33,36))) %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) %>% 
+  filter(org_code %in% list_org_codes_region)
+  
+
 calcs<-amb_dta_clean %>% 
   group_by(time) %>% 
   summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>% 
@@ -169,6 +182,3 @@ calcs<-amb_dta_clean %>%
   mutate(resp_time2=as_hms(resp_time2)) 
 
 calcs 
-
-
-
