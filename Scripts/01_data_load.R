@@ -3,8 +3,6 @@
 #Library 
 library(curl)
 library(here)
-library(aws.s3)
-
 
 #Data Download
 
