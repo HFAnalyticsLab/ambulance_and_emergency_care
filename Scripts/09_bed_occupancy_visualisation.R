@@ -34,7 +34,7 @@ plot<-England_overnightbeds %>%
   theme_THF()+
   scale_y_continuous(labels= scales::comma )+
   # facet_grid(cols=vars(org_lab))+
-  labs(x = "", y="Number of unoccupied beds", caption = "NHS England, Ambulance Quality Indicators")+
+  labs(x = "", y="Number of unoccupied beds", caption = "NHS England, Critical care and General & Acute Beds – Urgent and Emergency Care Daily Situation Reports ")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=60), 
@@ -44,9 +44,6 @@ plot<-England_overnightbeds %>%
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
-ggplotly(plot) %>% 
-  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
-  layout(legend=list(title=list(text=''))) 
-
+plot
 
 

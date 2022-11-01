@@ -150,9 +150,9 @@ amb_response<-amb_response_raw %>%
   mutate(resp_time=as.numeric(resp_time)) %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
   mutate(date2=yearmonth(date)) %>% 
-  # mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>% 
-  # mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>% 
-  # mutate(resp_time2=as_hms(resp_time2)) %>% 
+  mutate(resp_time2=as.POSIXct(as.numeric(resp_time),origin = "1970-01-01", tz="GMT")) %>%
+  mutate(resp_time2=format(resp_time2, format="%H:%M:%S")) %>%
+  mutate(resp_time2=as_hms(resp_time2)) %>%
   pivot_wider(c("org_name", "date", "date2"),names_from=  metric, values_from = resp_time)
 
 amb_response_average<-amb_response %>% 

@@ -92,13 +92,16 @@ plot_data %>%
   theme_THF()+
   facet_grid2(cols=vars(year), scales="free")+
   scale_fill_manual(values=c('#53a9cd','#dd0031'))+
-  labs(x = "", y="Handovers over 30 mins (%)", caption = "")+
+  labs(x = "", y="Handovers over 30 mins (%)", caption = "NHS England, Urgent and Emergency Care Daily Situation Reports")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         # axis.text.x = element_blank(),
-        axis.text.x=element_text(size=5, angle=90),
+        axis.text.x=element_text(size=11, angle=60),
         axis.text.y=element_text(size=11),
         plot.caption = element_markdown(hjust=0, size=9),
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
+
+
+

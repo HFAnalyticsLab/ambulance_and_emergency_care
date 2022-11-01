@@ -19,7 +19,6 @@ library(THFstyle)
 library(fpp2)
 library(zoo)
 library(ggtext)
-library(plotly)
 
 #Functions
 
@@ -63,25 +62,23 @@ plot<-amb_incidents_type %>%
   ggplot(.,aes(x=date, y=as.numeric(val), fill=metric, order=val))+
   geom_area(position=position_stack(reverse=TRUE))+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
+           ymin=0, ymax=900000,fill="grey20", alpha=.1)+
+  annotate("richtext",x=as.Date("2020-03-01"), y=850000, 
+           label= "First two waves <br> of COVID-19", size=3, colour="black",hjust=0, fill=NA, label.color=NA)+
   theme_THF()+
   # facet_grid(cols=vars(org_lab))+
   scale_fill_THF()+
-  scale_y_continuous(labels= scales::comma )+
+  scale_y_continuous(labels= scales::comma, limits=c(0,900000), breaks=seq(0,900000, by=100000))+
   labs(x = "", y="Number of incidents", caption = "NHS England, Ambulance Quality Indicators")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
-        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.x=element_text(size=11, angle=60), 
         axis.text.y=element_text(size=11),
         plot.caption = element_markdown(hjust=0, size=9),
         plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
-
-
-
-ggplotly(plot) %>% 
-  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
-  layout(legend=list(title=list(text=''))) 
 
 
 #Proportion of category 1-4 incidents, figure 3b
@@ -119,7 +116,7 @@ plot<-prop_incidents %>%
   mutate(met_lab=factor(metric, levels=c("c1_prop", "c2_prop", "c3_prop", "c4_prop"),
                            labels=c("Category 1", "Category 2", "Category 3", "Category 4"))) %>% 
   ggplot(.,aes(x=date, y=as.numeric(val), fill=met_lab))+
-  geom_area(position=position_fill(reverse=TRUE))+
+  geom_area(position=position_fill(reverse=TRUE), alpha=.7)+
   # # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="fill", stat="identity")+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
@@ -137,9 +134,8 @@ plot<-prop_incidents %>%
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
-ggplotly(plot) %>% 
-  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
-  layout(legend=list(title=list(text=''))) 
+plot
+
 
 
 # Combining counts and proportions -------------------------------------------------------

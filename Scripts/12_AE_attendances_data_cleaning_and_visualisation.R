@@ -66,10 +66,14 @@ plot<-aevolwait%>%
   geom_line(colour='#dd0031')+
   scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
   theme_THF()+
+  annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
+           ymin=0, ymax=max(aevolwait$pct4plusadmitted),fill="grey20", alpha=.1)+
+  annotate("richtext",x=as.Date("2020-03-01"), y=(max(aevolwait$pct4plusadmitted)-0.015), 
+           label= "First two waves <br> of COVID-19", size=3, colour="black",hjust=0, fill=NA, label.color=NA)+
   # facet_grid(cols=vars(org_lab))+
   # scale_colour_THF()+
   scale_y_continuous(labels = scales::percent)+
-  labs(x = "", y="Proportion of patients waiting 4+ hours to be admitted (%)", caption = "A&E data")+
+  labs(x = "", y="Proportion of patients waiting 4+ hours to be admitted (%)", caption = "NHS England, A&E Attendances and Emergency Admissions")+
   theme(legend.text=element_text(size=11),
         legend.title = element_blank(),
         axis.text.x=element_text(size=8, angle=60), 
@@ -79,8 +83,5 @@ plot<-aevolwait%>%
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
-
-ggplotly(plot) %>% 
-  layout(legend = list(orientation = 'v',valign="top", font=list(size=8))) %>% 
-  layout(legend=list(title=list(text=''))) 
+plot
 
