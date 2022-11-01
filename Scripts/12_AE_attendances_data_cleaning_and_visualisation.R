@@ -4,9 +4,15 @@ library(readxl)
 library(tidyverse)
 library(lubridate)
 
-#Need to update range to include most recent data
-aevolume<-read_excel("data/aevol.xls", sheet='Activity', range="B16:N162")
-aewait<-read_excel("data/aevol.xls", sheet='Performance', range="B16:N159")
+
+aevolume<-readxl::read_excel("data/aevol.xls", sheet='Activity')
+aewait<-readxl::read_excel("data/aevol.xls", sheet='Performance')
+
+aevolume<-aevolume %>% 
+  clean_names() %>% 
+  slice(which(title=="Period"):n()) %>% 
+  row_to_names(., 1) %>% 
+  clean_names()
 
 
 aevolume<-aevolume %>% 
@@ -14,12 +20,23 @@ aevolume<-aevolume %>%
   select(c("period","type_1_departments_major_a_e","emergency_admissions_via_type_1_a_e",
            "total_emergency_admissions","number_of_patients_spending_4_hours_from_decision_to_admit_to_admission",
            "number_of_patients_spending_12_hours_from_decision_to_admit_to_admission")) %>% 
+  mutate(period=as.Date(as.numeric(period), origin="1899-12-30")) %>% 
   filter(period>as.Date("2016-12-01"))
+
+aevolume[2:6] = lapply(aevolume[2:6], FUN = function(y){as.numeric(y)})
+
+aewait<-aewait %>% 
+  clean_names() %>% 
+  slice(which(title=="Period"):n()) %>% 
+  row_to_names(., 1) %>% 
+  clean_names()
 
 aewait<-aewait %>% 
   clean_names() %>% 
   select(c("period","percentage_in_4_hours_or_less_type_1")) %>% 
-  filter(period>as.Date("2016-12-01"))
+  mutate(period=as.Date(as.numeric(period), origin="1899-12-30")) %>% 
+  filter(period>as.Date("2016-12-01")) %>% 
+  mutate(percentage_in_4_hours_or_less_type_1=as.numeric(percentage_in_4_hours_or_less_type_1))
 
 aevolwait <- merge(aevolume, aewait, by="period")
 
