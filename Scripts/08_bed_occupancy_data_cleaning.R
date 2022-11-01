@@ -11,7 +11,6 @@ library(janitor)
 
 
 # Data load ---------------------------------------------------------------
-#N.B. Need to update the range to include latest data 
 
 bedoccup<-readxl::read_excel("data/overnightbedoccup.xls", sheet='Open Overnight')
 bedoccup_monthly<-readxl::read_excel("data/bedoccup_montly.xlsx", sheet='Timeseries type 1 acute trusts')
