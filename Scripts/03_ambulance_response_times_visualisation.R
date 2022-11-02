@@ -19,6 +19,7 @@ library(THFstyle)
 library(ggtext)
 library(stringr)
 library(tsibble)
+library(janitor)
 
 #Functions
 
