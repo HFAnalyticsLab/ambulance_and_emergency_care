@@ -70,12 +70,16 @@ The src folder contains
 * Anne Alarilla - [Twitter](https://twitter.com/AlarillaAnne) - [GitHub](https://github.com/annealarilla)
 * Mai Stafford - [Twitter](https://twitter.com/stafford_xm) - [GitHub](https://github.com/maistafford)
 
+Project team also consisted of Ellen Coughlan, Josh Keith and Charles Tallack. 
+
 ## License
 
 This project is licensed under the [MIT License](https://github.com/HFAnalyticsLab/ambulance_and_emergency_care/blob/main/LICENSE).
 
 
+## Acknowledgements
 
+Code from [COVID_19_social_care_open_data](https://github.com/HFAnalyticsLab/COVID19_social_care_open_data) was adapted for this respository.  
 
 
 
