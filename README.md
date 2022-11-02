@@ -18,15 +18,14 @@ This repository only includes code for the charts in the above publication and i
 
 * [NHS ambulance handover data](https://www.england.nhs.uk/statistics/statistical-work-areas/uec-sitrep/) 
 
-* [NHS staff sickness and absence rates](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-sickness-absence-rates/april-2020-provisional-statistics)    
-
+* [NHS staff sickness absence rates](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-sickness-absence-rates/april-2020-provisional-statistics)    
 * [A&E waiting times](https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/)
 
 * [Critical care and general acute](https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/)
 
 ## How does it work? 
 
-This repository outlines how to download the data, process, analyse and visualise the data used in the publication. **The analysis and charts can be reproduced using the latest data by updating the data source links, updating the data range for some of the sources and creating a data folder within your projects folder.** 
+This repository outlines how to download the data, process, analyse and visualise the data used in the publication. **The analysis and charts can be reproduced using the latest data by updating the data source links, updating the data range for some of the sources and creating a 'data' folder within your projects main folder.** 
 
 It must be noted that we use AWS S3 cloud storage therefore where necessary the code for saving and retrieving files will need to be adapted based on your local storage structure. 
 
@@ -38,7 +37,6 @@ These scripts were written in R version 4.0.02 and RStudio Workbench Version 1.1
 * ISO week 
 * lubridate 
 * curl
-* plotly
 * rio
 * readxl
 * janitor
@@ -47,6 +45,9 @@ These scripts were written in R version 4.0.02 and RStudio Workbench Version 1.1
 * ggtext
 * readr
 * stirngr
+* ggh4x 
+
+In addition our plots make use of our in house style package [THFstyle](https://github.com/THF-evaluative-analytics/THFstyle) available here on GitHub.
 
 ### Getting started
 
