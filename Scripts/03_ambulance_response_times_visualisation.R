@@ -17,8 +17,8 @@ library(hms)
 library(tidyverse)
 library(THFstyle)
 library(ggtext)
-library(plotly)
 library(stringr)
+library(tsibble)
 
 #Functions
 
@@ -43,7 +43,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
     # geom_point(size=0.25)+
     # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
     # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-    scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+    tsibble::scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
     theme_THF()+
     facet_grid(cols=vars(met_cat))+
     scale_colour_THF()+
