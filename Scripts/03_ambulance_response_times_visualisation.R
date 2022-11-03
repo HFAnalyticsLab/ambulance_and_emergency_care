@@ -48,7 +48,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
     theme_THF()+
     facet_grid(cols=vars(met_cat))+
     scale_colour_THF()+
-    labs(x = "", y="Response time (minutes)", caption = "NHS England, Ambulance Quality Indicators")+
+    labs(x = "", y="Response time (hrs:mins:secs)", caption = "NHS England, Ambulance Quality Indicators")+
     ggtitle(var.x)+
     theme(legend.text=element_text(size=11),
           legend.title = element_blank(),
