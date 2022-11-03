@@ -57,7 +57,7 @@ sick_ab %>%
   arrange(date2) %>%  
   ggplot(., aes(x=date2, y=sa_rate, group=org_type_new, colour=org_type_new))+
   geom_line()+
-  scale_x_yearmonth(breaks = '3 months',date_labels = "%b %g")+
+  scale_x_yearmonth(breaks = '3 months',date_labels = "%b %y")+
   annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
            ymin=0, ymax=10,fill="grey20", alpha=.1)+
   annotate("richtext",x=as.Date("2020-03-01"), y=9.5, 

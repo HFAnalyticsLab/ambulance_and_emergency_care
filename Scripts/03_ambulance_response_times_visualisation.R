@@ -44,7 +44,7 @@ trends_graph <-  function(data=amb_dta_plot,var.x="North East and Yorkshire"){
     # geom_point(size=0.25)+
     # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
     # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-    tsibble::scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+    tsibble::scale_x_yearmonth( breaks = '6 months',date_labels = "%b %y")+
     theme_THF()+
     facet_grid(cols=vars(met_cat))+
     scale_colour_THF()+
@@ -88,12 +88,14 @@ amb_dta_plot<-amb_dta_plot %>%
   mutate(resp_time2=as_hms(resp_time2)) %>% 
   mutate(org_lab=factor(org_name, levels=c("England","North East and Yorkshire","North West",
                                            "Midlands","East of England","London","South East","South West"))) %>% 
-  filter(!str_detect(metric, "c1T"))
+  filter(!str_detect(metric, "c1T")) %>% 
+  mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
+  mutate(monthyear=format(date, "%b %y"))
 
 filter_dates<-as.Date(seq(ymd('2017-08-01'),ymd('2018-03-01'),by='1 month'), format="%Y-%m-%d")
 
 amb_dta_plot<-amb_dta_plot %>% 
-  filter(as.Date(date) %notin% filter_dates)
+  filter(date %notin% filter_dates)
 
 
 
@@ -109,6 +111,7 @@ g<-lapply(vars[1:length(vars)],trends_graph,data=amb_dta_plot)
 
 g
 
+trends_graph(var.x="England")
 
 # Data for flourish -------------------------------------------------------
 

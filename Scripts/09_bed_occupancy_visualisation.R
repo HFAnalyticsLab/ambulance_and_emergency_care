@@ -31,7 +31,7 @@ plot<-England_overnightbeds %>%
   # geom_point(size=0.25)+
   # geom_hline(yintercept = as_hms("00:07:00"), colour = '#524c48', linetype='dashed' )+
   # geom_hline(yintercept = as_hms("00:15:00"), colour = '#524c48', linetype='dashed')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %y")+
   theme_THF()+
   scale_y_continuous(labels= scales::comma )+
   # facet_grid(cols=vars(org_lab))+

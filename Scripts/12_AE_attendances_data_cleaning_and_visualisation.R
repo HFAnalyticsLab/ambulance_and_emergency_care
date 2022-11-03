@@ -65,7 +65,7 @@ plot<-aevolwait%>%
   select(c(Period, monthyear, pct4plusadmitted)) %>% 
   ggplot(.,aes(x=Period, y=pct4plusadmitted, group=1))+
   geom_line(colour='#dd0031')+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %y")+
   theme_THF()+
   annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
            ymin=0, ymax=max(aevolwait$pct4plusadmitted),fill="grey20", alpha=.1)+

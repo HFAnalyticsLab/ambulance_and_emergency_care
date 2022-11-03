@@ -61,8 +61,8 @@ plot<-amb_incidents_type %>%
                        labels=c("Hear and treat","Convey to emergency department",
                                 "Convey elsewhere", "See and treat"))) %>% 
   ggplot(.,aes(x=date, y=as.numeric(val), fill=metric, order=val))+
-  geom_area(position=position_stack(reverse=TRUE))+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  geom_area(position=position_stack(reverse=TRUE), alpha=0.6)+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %y")+
   annotate("rect", xmin=as.Date("2020-03-01"), xmax=as.Date("2021-05-01"), 
            ymin=0, ymax=900000,fill="grey20", alpha=.1)+
   annotate("richtext",x=as.Date("2020-03-01"), y=850000, 
@@ -81,6 +81,9 @@ plot<-amb_incidents_type %>%
         legend.margin=margin(0,0,0,0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
+plot
+
+ggsave('plot_incidents_by_type.png', dpi=300, height=6.5, width=10)
 
 #Proportion of category 1-4 incidents, figure 3b
 
@@ -120,7 +123,7 @@ plot<-prop_incidents %>%
   geom_area(position=position_fill(reverse=TRUE), alpha=.7)+
   # # geom_point(size=0.25)+
   # geom_bar(aes(fill=metric),position="fill", stat="identity")+
-  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %g")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b %y")+
   theme_THF()+
   # facet_grid(cols=vars(org_lab))+
   scale_fill_THF()+
@@ -137,7 +140,7 @@ plot<-prop_incidents %>%
 
 plot
 
-
+ggsave('plot_incidents_by_cat.png', dpi=300, height=6.5, width=10)
 
 # Combining counts and proportions -------------------------------------------------------
 
