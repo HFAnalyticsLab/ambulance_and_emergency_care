@@ -16,12 +16,12 @@ This repository only includes code for the charts in the above publication and i
 
 * [Ambulance quality indicators](https://www.england.nhs.uk/statistics/statistical-work-areas/ambulance-quality-indicators/ambulance-quality-indicators-data-2021-22/) 
 
-* [NHS ambulance handover data](https://www.england.nhs.uk/statistics/statistical-work-areas/uec-sitrep/) 
+* [Urgent and Emergency Care Daily Situation Reports](https://www.england.nhs.uk/statistics/statistical-work-areas/uec-sitrep/)
 
 * [NHS staff sickness absence rates](https://digital.nhs.uk/data-and-information/publications/statistical/nhs-sickness-absence-rates/april-2020-provisional-statistics)    
 * [A&E waiting times](https://www.england.nhs.uk/statistics/statistical-work-areas/ae-waiting-times-and-activity/)
 
-* [Critical care and general acute](https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/)
+* [Critical care and general acute beds- urgent and emergency care daily situation reports](https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/critical-care-and-general-acute-beds-urgent-and-emergency-care-daily-situation-reports/)
 
 ## How does it work? 
 
