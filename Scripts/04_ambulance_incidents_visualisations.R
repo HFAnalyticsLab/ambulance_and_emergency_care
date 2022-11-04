@@ -46,7 +46,8 @@ amb_incidents_type<-amb_incidents %>%
   filter(org_code=="Eng") %>% 
   select(c(year:all_incidents,hear_treat:date)) %>% 
   mutate(date=as.Date(date, format="%Y-%m-%d")) %>% 
-  select(all_incidents:date)
+  select(all_incidents:date) %>% 
+  mutate(monthyear=format(date, "%b %y"))
 
 filter_dates<-as.Date(seq(ymd('2017-08-01'),ymd('2018-03-01'),by='1 month'), format="%Y-%m-%d")
 
