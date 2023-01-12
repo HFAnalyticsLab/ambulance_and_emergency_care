@@ -1,6 +1,6 @@
 # Why have the ambulance waiting times been getting worse?
 
-## Project Status: [In progress]
+## Project Status: [Published](https://www.health.org.uk/publications/long-reads/why-have-ambulance-waiting-times-been-getting-worse)
 
 ## Project Description
 
