@@ -32,6 +32,7 @@ date_2<-format(as.Date(seq(ymd('2018-12-03'),ymd('2019-03-03'), by='1 day')),"%Y
 date_3<-format(as.Date(seq(ymd('2019-12-02'),ymd('2020-03-01'), by='1 day')),"%Y-%m-%d")
 date_4<-format(as.Date(seq(ymd('2020-11-30'),ymd('2021-04-04'), by='1 day')),"%Y-%m-%d")
 date_5<-format(as.Date(seq(ymd('2021-11-29'),ymd('2022-04-03'), by='1 day')),"%Y-%m-%d")
+date_6<-format(as.Date(seq(ymd('2022-11-14'),ymd('2023-01-08'), by='1 day')),"%Y-%m-%d")
   
 
 amball <- amball %>%
@@ -41,7 +42,8 @@ amball <- amball %>%
                         date %in% date_2~ "Winter 2018/19",
                         date %in% date_3~ "Winter 2019/20",
                         date %in% date_4~ "Winter 2020/21",
-                        date %in% date_5~ "Winter 2021/22"))
+                        date %in% date_5~ "Winter 2021/22", 
+                        date %in% date_6~ "Winter 2022/23"))
 
 
 
@@ -60,7 +62,7 @@ summamb <- amball %>%
   mutate(monthyear=format(start_week, "%b %y")) 
          
 #mutate(start_week=format(as.Date(start_week), "%d %b %y")) %>% 
-#write.csv(summamb,'flourish_amb_handovers.csv')
+write.csv(summamb,'flourish_amb_handovers.csv')
 
 # Calculations- summary of handover delays by years -----------------------
 

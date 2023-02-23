@@ -1,5 +1,6 @@
 #Bed occupancy
 
+rm(list=ls())
 # Housekeeping ------------------------------------------------------------
 #Library
 library(readxl)

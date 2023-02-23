@@ -32,6 +32,7 @@ amb_dta<-s3read_using(read.csv # Which function are we using to read
 # Format data --------------------------------------------------
 
 #Make variables numeric 
+amb_dta[7:14]=lapply(amb_dta[7:14], FUN = function(y){gsub(",","",y)})
 amb_dta[7:14] = lapply(amb_dta[7:14], FUN = function(y){as.numeric(y)})
 
 amb_dta_plot<-amb_dta %>% 
