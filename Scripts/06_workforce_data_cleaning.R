@@ -5,19 +5,31 @@
 rm(list=ls())
 
 #Library
+library(readxl)
 library(tidyverse)
 library(here)
 library(aws.s3)
 library(janitor)
-library(readxl)
 library(dplyr)
 
 
 # Load data ---------------------------------------------------------------
 sick_ab<-read_csv(here::here('data', "eng_sickness.csv"))
+sick_ab_jun<-read_csv(here::here('data', "eng_sickness_jun.csv"))
+sick_ab_jul<-read_csv(here::here('data', "eng_sickness_jul.csv"))
+sick_ab_aug<-read_csv(here::here('data', "eng_sickness_aug.csv"))
+
+sick_ab_new<-rbind(sick_ab_jun, sick_ab_jul, sick_ab_aug[,c(1:3,6:11)])
+
+sick_ab_new<-sick_ab_new %>% 
+  clean_names() %>% 
+  rename(fte_days_sick=fte_days_lost,sa_rate_percent=sickness_absence_rate_percent) %>% 
+  mutate(date=as.Date(date, format="%Y-%b"))
 
 sick_ab_all<-sick_ab %>% 
   clean_names() %>% 
+  select(-sort_date) %>% 
+  full_join(sick_ab_new) %>% 
   mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
   mutate(org_type_new=case_when(org_type=="Ambulance"~ "Ambulance", 
                                 org_type=="Acute"~"Acute",

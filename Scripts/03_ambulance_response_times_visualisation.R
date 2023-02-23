@@ -77,6 +77,7 @@ amb_dta<-s3read_using(read.csv # Which function are we using to read
 # Format data --------------------------------------------------
 
 #Make columns numeric
+amb_dta[7:16]=lapply(amb_dta[7:16], FUN = function(y){gsub(",","",y)})
 amb_dta[7:16] = lapply(amb_dta[7:16], FUN = function(y){as.numeric(y)})
 
 amb_dta_plot<-amb_dta %>%
@@ -118,6 +119,7 @@ trends_graph(var.x="England")
 amb_dta_charts<-amb_dta %>% 
   mutate(monthyear=format(as.Date(date), "%b %y"))
 
+amb_dta_charts[7:16]=lapply(amb_dta_charts[7:16], FUN = function(y){gsub(",","",y)})
 amb_dta_charts[7:16] = lapply(amb_dta_charts[7:16], FUN = function(y){as.numeric((y))/60})
 
 amb_dta_flourish<-amb_dta_charts %>% 
@@ -139,7 +141,7 @@ amb_dta_flourish<-amb_dta_charts %>%
   mutate(Metric= ifelse(Metric=="mean", "Mean", "90th percentile")) %>% 
   mutate(org_name=ifelse(org_name=="England", "England (Average of all regions)", org_name)) %>% 
   rename("Category 1"= "C1","Category 2"= "C2", "Category 3"= "C3", "Category 4"= "C4") %>% 
-  filter(date %notin% filter_dates)
+  filter(date %notin% as.character(filter_dates))
 
 write.csv(amb_dta_flourish,'amb_dta_resp_charts.csv')
 
@@ -149,7 +151,9 @@ write.csv(amb_dta_flourish,'amb_dta_resp_charts.csv')
 #Date ranges
 pre_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2019-03-01'),by='1 month')),"%Y-%m-%d")
 post_dates<-format(as.Date(seq(ymd('2021-04-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
-list_dates<-c(pre_dates, post_dates)
+new_dates<-format(as.Date(seq(ymd('2022-04-01'),ymd('2023-03-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(pre_dates, post_dates, new_dates)
+
 
 #Load data 
 amb_dta<-read_csv(here::here('data', "ambsys.csv"))
@@ -163,16 +167,12 @@ amb_dta_clean<-amb_dta %>%
   filter(as.character(date) %in% list_dates) %>% 
   mutate(time=case_when(as.character(date) %in% pre_dates ~ "2018/19",
                         as.character(date) %in% post_dates ~ "2021/22",
+                        as.character(date) %in% new_dates ~ "2022/23(Apr-Dec)",
                         TRUE ~ "NA"))
 
+amb_dta_clean[6:13]=lapply(amb_dta_clean[6:13], FUN = function(y){gsub(",","",y)})
 amb_dta_clean[6:13] = lapply(amb_dta_clean[6:13], FUN = function(y){as.numeric(y)})
 
-amb_dta_clean<-amb_dta %>% 
-  clean_names() %>% 
-  select(year:org_name, paste0("a",c(8,10:12,24,30,33,36))) %>% 
-  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) %>% 
-  filter(org_code %in% list_org_codes_region)
-  
 
 calcs<-amb_dta_clean %>% 
   group_by(time) %>% 

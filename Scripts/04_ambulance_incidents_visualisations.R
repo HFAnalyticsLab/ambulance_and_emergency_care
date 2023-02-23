@@ -37,6 +37,7 @@ amb_incidents<-s3read_using(read.csv # Which function are we using to read
 
 # Formatting for charts --------------------------------------------------
 
+amb_incidents[7:16]=lapply(amb_incidents[7:16], FUN = function(y){gsub(",","",y)})
 amb_incidents[7:16] = lapply(amb_incidents[7:16], FUN = function(y){as.numeric(y)})
 
 #Visualising incidents  -------------------------------------------------------
@@ -168,7 +169,9 @@ write.csv(incidents_flourish, "incidents_flourish_full.csv")
 
 pre_dates<-format(as.Date(seq(ymd('2018-04-01'),ymd('2019-03-01'),by='1 month')),"%Y-%m-%d")
 post_dates<-format(as.Date(seq(ymd('2021-04-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
-list_dates<-c(pre_dates, post_dates)
+new_dates<-format(as.Date(seq(ymd('2022-04-01'),ymd('2023-03-01'),by='1 month')),"%Y-%m-%d")
+pre_dates2<-format(as.Date(seq(ymd('2019-04-01'),ymd('2020-03-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(pre_dates, post_dates, new_dates, pre_dates2)
 
 amb_incidents2<-amb_incidents %>% 
   filter(org_code=="Eng") %>% 
@@ -183,6 +186,8 @@ calcs<-amb_incidents2 %>%
   filter(as.character(date) %in% list_dates) %>%
   mutate(time=case_when(as.character(date)  %in% pre_dates ~ "2018/19",
                         as.character(date) %in% post_dates ~ "2021/22",
+                        as.character(date) %in% new_dates ~ "2022/23(Apr-Dec)",
+                        as.character(date) %in% pre_dates2 ~ "2019/20",
                         TRUE~"NA")) %>%
   group_by(time) %>%
   summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>% 
@@ -193,5 +198,200 @@ calcs<-amb_incidents2 %>%
 
 
 calcs
+
+
+
+
+# New charts --------------------------------------------------------------
+
+
+
+amb_incidents3<-amb_incidents2 %>%
+  filter(as.character(date) %in% list_dates) %>%
+  mutate(time=case_when(as.character(date)  %in% pre_dates ~ "2018/19",
+                        as.character(date) %in% post_dates ~ "2021/22",
+                        as.character(date) %in% new_dates ~ "2022/23(Apr-Dec)",
+                        as.character(date) %in% pre_dates2 ~ "2019/20",
+                        TRUE~"NA")) %>% 
+  mutate(month=format(date,"%b")) %>% 
+  mutate(c1_prop=(c1/total_cat)*100,
+         c2_prop=(c2/total_cat)*100,
+         c3_prop=(c3/total_cat)*100,
+         c4_prop=(c4/total_cat)*100)
+
+
+
+amb_incidents4<-amb_incidents3 %>% 
+    pivot_wider(names_from=time, values_from=c(c1:c4))
+
+write_csv(amb_incidents3, 'incidents_new.csv')
+
+
+amb_incidents3 %>%
+  ggplot(.,aes(x=date, y=c1, group=time, colour=time))+
+  geom_line()+
+  # # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '1 months',date_labels = "%b")+
+  theme_THF()+
+  facet_grid(cols=vars(time))+
+  scale_fill_THF()+
+  scale_y_continuous(labels = scales::comma)+
+  labs(x = "", y="Proportion of incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+amb_incidents3 %>% 
+  ggplot(.,aes(x=monthyear, y=c1, colour=time,  group=time, order=time))+
+  geom_line()+
+  # scale_x_yearmonth(breaks = '1 month',date_labels = "%b %g")+
+  # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
+  # scale_x_discrete(labels=unique(plot_data$monthyear))+
+  theme_THF()+
+  facet_grid2(cols=vars(time), scales="free")+
+  # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
+  labs(x = "", y="", caption = "")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        # axis.text.x = element_blank(),
+        axis.text.x=element_text(size=11, angle=60),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+amb_incidents3 %>% 
+  ggplot(.,aes(x=monthyear, y=c2, colour=time,  group=time, order=time))+
+  geom_line()+
+  # scale_x_yearmonth(breaks = '1 month',date_labels = "%b %g")+
+  # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
+  # scale_x_discrete(labels=unique(plot_data$monthyear))+
+  theme_THF()+
+  facet_grid2(cols=vars(time), scales="free")+
+  # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
+  labs(x = "", y="", caption = "")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        # axis.text.x = element_blank(),
+        axis.text.x=element_text(size=11, angle=60),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+amb_incidents3 %>%
+  ggplot(.,aes(x=date, y=all_incidents, group=time, colour=time))+
+  geom_line()+
+  # # geom_point(size=0.25)+
+  # geom_bar(aes(fill=metric),position="fill", stat="identity")+
+  scale_x_yearmonth( breaks = '6 months',date_labels = "%b")+
+  theme_THF()+
+  facet_grid(cols=vars(time), scales="free")+
+  scale_fill_THF()+
+  scale_y_continuous(labels = scales::comma)+
+  labs(x = "", y="Proportion of incidents", caption = "NHS England, Ambulance Quality Indicators")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        axis.text.x=element_text(size=8, angle=60), 
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+
+
+amb_incidents3 %>% 
+  ggplot(.,aes(x=monthyear, y=c2_prop, colour=time,  group=time, order=time))+
+  geom_line()+
+  # scale_x_yearmonth(breaks = '1 month',date_labels = "%b %g")+
+  # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
+  # scale_x_discrete(labels=unique(plot_data$monthyear))+
+  theme_THF()+
+  facet_grid2(cols=vars(time), scales="free")+
+  # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
+  labs(x = "", y="", caption = "")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        # axis.text.x = element_blank(),
+        axis.text.x=element_text(size=11, angle=60),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+amb_incidents3 %>% 
+  ggplot(.,aes(x=monthyear, y=c1_prop, colour=time,  group=time, order=time))+
+  geom_line()+
+  # scale_x_yearmonth(breaks = '1 month',date_labels = "%b %g")+
+  # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
+  # scale_x_discrete(labels=unique(plot_data$monthyear))+
+  theme_THF()+
+  facet_grid2(cols=vars(time), scales="free")+
+  # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
+  labs(x = "", y="", caption = "")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        # axis.text.x = element_blank(),
+        axis.text.x=element_text(size=11, angle=60),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
+
+prop_incidents_types2<-amb_incidents_type %>% 
+  filter(as.character(date) %in% list_dates) %>%
+  mutate(time=case_when(as.character(date)  %in% pre_dates ~ "2018/19",
+                        as.character(date) %in% post_dates ~ "2021/22",
+                        as.character(date) %in% new_dates ~ "2022/23(Apr-Dec)",
+                        as.character(date) %in% pre_dates2 ~ "2019/20",
+                        TRUE~"NA")) %>% 
+  mutate(month=format(date,"%b")) %>% 
+ mutate(total=hear_treat+convey_ED+convey_elsewhere+see_treat) %>% 
+  mutate(hear_treat_prop=(hear_treat/total)*100,
+         convey_ED_prop=(convey_ED/total)*100,
+         convey_elsewhere_prop=(convey_elsewhere/total)*100,
+         see_treat_prop=(see_treat/total)*100) %>% 
+  mutate(monthyear=format(as.Date(date), "%b %y"))
+
+
+write_csv(prop_incidents_types2, 'incidents_types_new.csv')
+
+
+
+
+prop_incidents_types2 %>% 
+  ggplot(.,aes(x=monthyear, y=convey_elsewhere, colour=time,  group=time, order=time))+
+  geom_line()+
+  # scale_x_yearmonth(breaks = '1 month',date_labels = "%b %g")+
+  # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
+  # scale_x_discrete(labels=unique(plot_data$monthyear))+
+  theme_THF()+
+  facet_grid2(cols=vars(time), scales="free")+
+  # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
+  labs(x = "", y="", caption = "")+
+  theme(legend.text=element_text(size=11),
+        legend.title = element_blank(),
+        # axis.text.x = element_blank(),
+        axis.text.x=element_text(size=11, angle=60),
+        axis.text.y=element_text(size=11),
+        plot.caption = element_markdown(hjust=0, size=9),
+        plot.margin = unit(c(1,1.5,0.5,0.5), "cm"),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(-10,-10,-10,-10))
 
 
