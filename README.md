@@ -14,7 +14,7 @@ The findings will be published as a Health Foundation long chart
 
 This repository only includes code for the charts in the above publication and is not an extensive reference list for the publication.
 
-* [Ambulance quality indicators](https://www.england.nhs.uk/statistics/statistical-work-areas/ambulance-quality-indicators/ambulance-quality-indicators-data-2021-22/) 
+* [Ambulance quality indicators](https://www.england.nhs.uk/statistics/statistical-work-areas/ambulance-quality-indicators/) 
 
 * [Urgent and Emergency Care Daily Situation Reports](https://www.england.nhs.uk/statistics/statistical-work-areas/uec-sitrep/)
 
