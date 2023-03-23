@@ -11,7 +11,7 @@ library(here)
 
 # Ambulance Quality Indicators ---------------------------------------------
 
-link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/01/AmbSYS-for-December-2022.csv'
+link <-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/03/AmbSYS-to-February23.csv'
 
 destfile <- here::here('data', "ambsys.csv")
 curl_download(link, destfile = destfile)
@@ -43,6 +43,12 @@ curl_download(link, destfile = destfile)
 
 link<-'https://files.digital.nhs.uk/39/B64543/NHS%20Sickness%20Absence%20rates%20CSV%2C%20August%202022.csv'
 destfile <- here::here('data', "eng_sickness_aug.csv")
+curl_download(link, destfile = destfile)
+
+#October
+
+link<-'https://files.digital.nhs.uk/DC/CED086/NHS%20Sickness%20Absence%20rates%20CSV%2C%20October%202022.csv'
+destfile <- here::here('data', "eng_sickness_oct.csv")
 curl_download(link, destfile = destfile)
 
 
@@ -89,7 +95,7 @@ curl_download(link, destfile = destfile)
 
 
 #Adjusted monthly time series 
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/01/Adjusted-Monthly-AE-Time-Series-December-2022.xls'
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/03/Adjusted-Monthly-AE-Time-Series-February-2023-1.xls'
 
 destfile <- here::here('data', "aevol.xls")
 curl_download(link, destfile = destfile)
@@ -98,7 +104,7 @@ curl_download(link, destfile = destfile)
 # Bed Occupancy -----------------------------------------------------------
 
 #Bed occupancy (Yearly)
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2022/08/Beds-Timeseries-2010-11-onwards-Q1-2022-23-ADJ-for-missings-TRFGH.xls'
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/02/Beds-Timeseries-2010-11-onwards-Q3-2022-23-ADJ-for-missings-TRWQA.xls'
 
 destfile <- here::here('data', "overnightbedoccup.xls")
 curl_download(link, destfile = destfile)
@@ -106,16 +112,16 @@ curl_download(link, destfile = destfile)
 
 #Overnight bed occupancy in months
 
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/01/Beds-publication-Timeseries-March-2020-December-2022.xlsx'
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/03/Beds-publication-Timeseries-March-2020-February-2023.xlsx'
 
-destfile <- here::here('data', "bedoccup_montly.xlsx")
+destfile <- here::here('data', "bedoccup_monthly.xlsx")
 curl_download(link, destfile = destfile)
 
 
 # Waiting times -----------------------------------------------------------
 
 
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/01/RTT-Overview-Timeseries-Including-Estimates-for-Missing-Trusts-Nov22-XLS-98K-63230.xlsx'
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/03/RTT-Overview-Timeseries-Including-Estimates-for-Missing-Trusts-Jan23-XLS-93K-03732.xlsx'
 
 destfile <- here::here('data', "waiting_times.xlsx")
 curl_download(link, destfile = destfile)
