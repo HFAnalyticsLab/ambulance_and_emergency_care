@@ -255,7 +255,7 @@ amb_incidents3 %>%
   # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
   # scale_x_discrete(labels=unique(plot_data$monthyear))+
   theme_THF()+
-  facet_grid2(cols=vars(time), scales="free")+
+  facet_grid(cols=vars(time), scales="free")+
   # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
   labs(x = "", y="", caption = "")+
   theme(legend.text=element_text(size=11),
@@ -275,7 +275,7 @@ amb_incidents3 %>%
   # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
   # scale_x_discrete(labels=unique(plot_data$monthyear))+
   theme_THF()+
-  facet_grid2(cols=vars(time), scales="free")+
+  facet_grid(cols=vars(time), scales="free")+
   # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
   labs(x = "", y="", caption = "")+
   theme(legend.text=element_text(size=11),
@@ -318,7 +318,7 @@ amb_incidents3 %>%
   # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
   # scale_x_discrete(labels=unique(plot_data$monthyear))+
   theme_THF()+
-  facet_grid2(cols=vars(time), scales="free")+
+  facet_grid(cols=vars(time), scales="free")+
   # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
   labs(x = "", y="", caption = "")+
   theme(legend.text=element_text(size=11),
@@ -339,7 +339,7 @@ amb_incidents3 %>%
   # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
   # scale_x_discrete(labels=unique(plot_data$monthyear))+
   theme_THF()+
-  facet_grid2(cols=vars(time), scales="free")+
+  facet_grid(cols=vars(time), scales="free")+
   # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
   labs(x = "", y="", caption = "")+
   theme(legend.text=element_text(size=11),
@@ -381,7 +381,7 @@ prop_incidents_types2 %>%
   # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
   # scale_x_discrete(labels=unique(plot_data$monthyear))+
   theme_THF()+
-  facet_grid2(cols=vars(time), scales="free")+
+  facet_grid(cols=vars(time), scales="free")+
   # scale_fill_manual(values=c('#53a9cd','#dd0031'))+
   labs(x = "", y="", caption = "")+
   theme(legend.text=element_text(size=11),
