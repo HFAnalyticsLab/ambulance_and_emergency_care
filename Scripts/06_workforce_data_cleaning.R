@@ -24,22 +24,27 @@ sick_ab_new<-rbind(sick_ab_jun, sick_ab_jul, sick_ab_aug[,c(1:3,6:11)])
 sick_ab_new<-sick_ab_new %>% 
   clean_names() %>% 
   rename(fte_days_sick=fte_days_lost,sa_rate_percent=sickness_absence_rate_percent) %>% 
-  mutate(date=as.Date(date, format="%Y-%b"))
+  mutate(date=format(as.Date(sick_ab_new$DATE, format= "%d/%m/%Y"),"%Y-%b"))
+
+
+sick_ab<-sick_ab %>% 
+  clean_names() %>% 
+  mutate(date=str_to_title(str_squish(sick_ab$Date))) %>% 
+  select(-sort_date) 
 
 sick_ab_all<-sick_ab %>% 
-  clean_names() %>% 
-  select(-sort_date) %>% 
-  full_join(sick_ab_new) %>% 
+  bind_rows(sick_ab_new) %>% 
   mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
   mutate(org_type_new=case_when(org_type=="Ambulance"~ "Ambulance", 
                                 org_type=="Acute"~"Acute",
                                 org_type=="Mental Health"~ "Mental Health",
-                                TRUE ~ "Other")) %>% 
+                                TRUE ~ "Other")) %>%
   group_by(date, org_type_new) %>% 
   summarise(across(where(is.numeric), sum)) %>% 
-  select(-c(sort_date, sa_rate_percent)) %>% 
+  select(-sa_rate_percent) %>% 
   mutate(sa_rate=round((fte_days_sick/fte_days_available)*100,2)) %>% 
-  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d"))
+  mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d")) %>% 
+  arrange(date2)
 
 
 eng_sick_ab<-sick_ab %>%
@@ -47,7 +52,7 @@ eng_sick_ab<-sick_ab %>%
   mutate_if(is.numeric, ~replace(., is.na(.), 0)) %>% 
   group_by(date) %>%
   summarise(across(where(is.numeric), sum)) %>% 
-  select(-c(sort_date, sa_rate_percent)) %>% 
+  select(-sa_rate_percent) %>% 
   mutate(sa_rate=round((fte_days_sick/fte_days_available)*100,2)) %>% 
   mutate(date2=as.Date(paste0(date,"-01"), format="%Y-%b-%d")) %>% 
   arrange(date2) %>% 
