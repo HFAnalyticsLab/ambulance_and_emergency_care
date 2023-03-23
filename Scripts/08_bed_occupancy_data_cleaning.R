@@ -14,7 +14,7 @@ library(janitor)
 # Data load ---------------------------------------------------------------
 
 bedoccup<-readxl::read_excel("data/overnightbedoccup.xls", sheet='Open Overnight')
-bedoccup_monthly<-readxl::read_excel("data/bedoccup_montly.xlsx", sheet='Timeseries type 1 acute trusts')
+bedoccup_monthly<-readxl::read_excel("data/bedoccup_monthly.xlsx", sheet='Timeseries type 1 acute trusts')
 
 
 
