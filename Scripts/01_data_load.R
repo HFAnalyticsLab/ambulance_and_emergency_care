@@ -45,6 +45,11 @@ link<-'https://files.digital.nhs.uk/39/B64543/NHS%20Sickness%20Absence%20rates%2
 destfile <- here::here('data', "eng_sickness_aug.csv")
 curl_download(link, destfile = destfile)
 
+#September
+link<-'https://files.digital.nhs.uk/00/B1BCE8/NHS%20Sickness%20Absence%20rates%20CSV%2C%20September%202022.csv'
+destfile <- here::here('data', "eng_sickness_sep.csv")
+curl_download(link, destfile = destfile)
+
 #October
 
 link<-'https://files.digital.nhs.uk/DC/CED086/NHS%20Sickness%20Absence%20rates%20CSV%2C%20October%202022.csv'
