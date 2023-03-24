@@ -18,8 +18,10 @@ sick_ab<-read_csv(here::here('data', "eng_sickness.csv"))
 sick_ab_jun<-read_csv(here::here('data', "eng_sickness_jun.csv"))
 sick_ab_jul<-read_csv(here::here('data', "eng_sickness_jul.csv"))
 sick_ab_aug<-read_csv(here::here('data', "eng_sickness_aug.csv"))
+sick_ab_sep<-read_csv(here::here('data', "eng_sickness_sep.csv"))
+sick_ab_oct<-read_csv(here::here('data', "eng_sickness_oct.csv"))
 
-sick_ab_new<-rbind(sick_ab_jun, sick_ab_jul, sick_ab_aug[,c(1:3,6:11)])
+sick_ab_new<-rbind(sick_ab_jun, sick_ab_jul, sick_ab_aug[,c(1:3,6:11)], sick_ab_sep[,c(1:3,6:11)], sick_ab_oct[,c(1:3,6:11)])
 
 sick_ab_new<-sick_ab_new %>% 
   clean_names() %>% 
