@@ -92,7 +92,7 @@ plot_data %>%
   # scale_x_date(date_breaks = '1 month', date_labels ="%b %g")
   # scale_x_discrete(labels=unique(plot_data$monthyear))+
   theme_THF()+
-  facet_grid2(cols=vars(year), scales="free")+
+  facet_grid(cols=vars(year), scales="free")+
   scale_fill_manual(values=c('#53a9cd','#dd0031'))+
   labs(x = "", y="Handovers over 30 mins (%)", caption = "NHS England, Urgent and Emergency Care Daily Situation Reports")+
   theme(legend.text=element_text(size=11),
