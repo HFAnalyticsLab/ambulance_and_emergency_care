@@ -90,7 +90,7 @@ destfile <- here::here('data', "raw2021handovers.xlsx")
 curl_download(link, destfile = destfile)
 
 #2022
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/01/Ambulance-Collection-Web-File-Timeseries-1.xlsx'
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/Ambulance-Collection-Web-File-Timeseries.xlsx'
 
 destfile <- here::here('data', "raw2022handovers.xlsx")
 curl_download(link, destfile = destfile)

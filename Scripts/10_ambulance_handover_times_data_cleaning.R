@@ -227,7 +227,7 @@ saveRDS(amball202122, file="amball202122.rds")
 
 # 2022 --------------------------------------------------------------------
 
-x2022handovers<-read_excel("data/raw2022handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="E15:HT16")
+x2022handovers<-read_excel("data/raw2022handovers.xlsx", sheet='Ambulance Arrivals and Delays', range="E15:UR16")
 
 ambdelay<-x2022handovers
 
@@ -243,11 +243,11 @@ longtest3 <- ambdelay_3060 %>%
   pivot_longer(cols=starts_with("Delay 30-60 mins..."), names_to="day", names_prefix="Delay 30-60 mins...", values_to="numdelays3060", values_drop_na=FALSE)
 
 longtest1 <- longtest1 %>%
-  mutate(date=format(as.Date(seq(ymd('2022-11-14'),ymd('2023-01-08'), by='1 day')),"%Y-%m-%d"))
+  mutate(date=format(as.Date(seq(ymd('2022-11-14'),ymd('2023-04-02'), by='1 day')),"%Y-%m-%d"))
 longtest2 <- longtest2 %>%
-  mutate(date=format(as.Date(seq(ymd('2022-11-14'),ymd('2023-01-08'), by='1 day')),"%Y-%m-%d"))
+  mutate(date=format(as.Date(seq(ymd('2022-11-14'),ymd('2023-04-02'), by='1 day')),"%Y-%m-%d"))
 longtest3 <- longtest3 %>%
-  mutate(date=format(as.Date(seq(ymd('2022-11-14'),ymd('2023-01-08'), by='1 day')),"%Y-%m-%d"))
+  mutate(date=format(as.Date(seq(ymd('2022-11-14'),ymd('2023-04-02'), by='1 day')),"%Y-%m-%d"))
 
 amball <- merge(longtest1,longtest2, by="date")
 amball <- merge(amball,longtest3, by="date")

@@ -32,7 +32,7 @@ date_2<-format(as.Date(seq(ymd('2018-12-03'),ymd('2019-03-03'), by='1 day')),"%Y
 date_3<-format(as.Date(seq(ymd('2019-12-02'),ymd('2020-03-01'), by='1 day')),"%Y-%m-%d")
 date_4<-format(as.Date(seq(ymd('2020-11-30'),ymd('2021-04-04'), by='1 day')),"%Y-%m-%d")
 date_5<-format(as.Date(seq(ymd('2021-11-29'),ymd('2022-04-03'), by='1 day')),"%Y-%m-%d")
-date_6<-format(as.Date(seq(ymd('2022-11-14'),ymd('2023-01-08'), by='1 day')),"%Y-%m-%d")
+date_6<-format(as.Date(seq(ymd('2022-11-14'),ymd('2023-04-02'), by='1 day')),"%Y-%m-%d")
   
 
 amball <- amball %>%
