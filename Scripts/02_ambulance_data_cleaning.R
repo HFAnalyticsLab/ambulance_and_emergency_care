@@ -41,10 +41,81 @@ names(amb_dta_clean)[14:15]<-c(paste0("c4_",c("mean", "90thcent")))
 
 #Add date variable
 amb_dta_regions<-amb_dta_clean %>% 
-  filter(org_code %in% c(list_org_codes_region, "Eng")) %>% 
+  filter(org_code %in% c(list_org_codes_region)) %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) %>% 
+  mutate(month=format(date,"%m")) %>% 
+  mutate(year=format(date, "%Y"))
+
+#Make columns numeric
+amb_dta_regions[6:15]=lapply(amb_dta_regions[6:15], FUN = function(y){gsub(",","",y)})
+amb_dta_regions[6:15] = lapply(amb_dta_regions[6:15], FUN = function(y){as.numeric(y)})
+
+
+
+
+# calculate response times ------------------------------------------------
+
+
+#Select relevant columns 
+amb_dta_clean_eng<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(8,10:12, 24,30,33,36, 26,32,35,38)))
+
+#Region codes
+list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
+
+#Rename columns 
+names(amb_dta_clean_eng)[c(6,10)]<-c(paste0("c1_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(7,11)]<-c(paste0("c2_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(8,12)]<-c(paste0("c3_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(9,13)]<-c(paste0("c4_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(14:17)]<-c(paste0(c("c1","c2", "c3", "c4"),"_90RT"))
+
+
+amb_dta_clean_eng<-amb_dta_clean_eng %>% 
+  filter(org_code %in% c(list_org_codes_region)) %>% 
   mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
 
-      
+
+#Make columns numeric
+amb_dta_clean_eng[6:17]=lapply(amb_dta_clean_eng[6:17], FUN = function(y){gsub(",","",y)})
+amb_dta_clean_eng[6:17] = lapply(amb_dta_clean_eng[6:17], FUN = function(y){as.numeric(y)})
+
+london<-amb_dta_clean_eng %>% 
+  filter(region=="London") %>% 
+  filter(date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")))
+
+
+eng<-amb_dta_clean_eng %>% 
+  mutate(c1_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c1_incidents),
+         c2_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c2_incidents),
+        c3_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c3_incidents),
+        c4_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c4_incidents)) %>% 
+  group_by(date) %>%
+  mutate(c1_prod=c1_incidents*c1_90RT, 
+         c2_prod=c2_incidents*c2_90RT, 
+         c3_prod=c3_incidents*c3_90RT, 
+         c4_prod=c4_incidents*c4_90RT) %>% 
+  summarise(across(where(is.numeric), sum, na.rm=TRUE)) %>% 
+  mutate(c1_mean=round(c1_RT/c1_incidents), 
+         c2_mean=round(c2_RT/c2_incidents), 
+         c3_mean=round(c3_RT/c3_incidents),
+         c4_mean=round(c4_RT/c4_incidents)) %>% 
+  mutate(c1_90thcent=round(c1_prod/c1_incidents),
+         c2_90thcent=round(c1_prod/c2_incidents),
+         c3_90thcent=round(c1_prod/c3_incidents),
+         c4_90thcent=round(c1_prod/c4_incidents)) %>% 
+  mutate(org_code="Eng") %>% 
+  mutate(region="England") %>% 
+  mutate(org_name="England") %>% 
+  mutate(year=format(date, "%Y")) %>% 
+  mutate(month=format(date,"%m")) %>% 
+  select(-contains(c("RT", "incidents", "prod")))
+  
+amb_dta_regions<-amb_dta_regions %>% 
+  full_join(eng)
+  
+
 #Save Data
 #### save R objects from the environment directly to your s3 bucket
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
@@ -53,6 +124,9 @@ s3write_using(amb_dta_regions # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
               , object = 'amb_RT_regions.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
+
+
+
 
 # Number of incidents ---------------------------------------------------------------
 
