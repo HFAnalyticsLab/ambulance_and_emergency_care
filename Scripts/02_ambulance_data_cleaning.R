@@ -102,9 +102,9 @@ eng<-amb_dta_clean_eng %>%
          c3_mean=round(c3_RT/c3_incidents),
          c4_mean=round(c4_RT/c4_incidents)) %>% 
   mutate(c1_90thcent=round(c1_prod/c1_incidents),
-         c2_90thcent=round(c1_prod/c2_incidents),
-         c3_90thcent=round(c1_prod/c3_incidents),
-         c4_90thcent=round(c1_prod/c4_incidents)) %>% 
+         c2_90thcent=round(c2_prod/c2_incidents),
+         c3_90thcent=round(c3_prod/c3_incidents),
+         c4_90thcent=round(c4_prod/c4_incidents)) %>% 
   mutate(org_code="Eng") %>% 
   mutate(region="England") %>% 
   mutate(org_name="England") %>% 
