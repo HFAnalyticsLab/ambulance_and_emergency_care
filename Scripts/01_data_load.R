@@ -11,7 +11,7 @@ library(here)
 
 # Ambulance Quality Indicators ---------------------------------------------
 
-link <-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/03/AmbSYS-to-February23.csv'
+link <-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/AmbSYS-up-to-Mar-2023.csv'
 
 destfile <- here::here('data', "ambsys.csv")
 curl_download(link, destfile = destfile)
@@ -56,6 +56,10 @@ link<-'https://files.digital.nhs.uk/DC/CED086/NHS%20Sickness%20Absence%20rates%2
 destfile <- here::here('data', "eng_sickness_oct.csv")
 curl_download(link, destfile = destfile)
 
+# November
+link <- 'https://files.digital.nhs.uk/7B/4BA143/NHS%20Sickness%20Absence%20rates%20CSV%2C%20November%202022.csv'
+destfile <- here::here('data', "eng_sickness_nov.csv")
+curl_download(link, destfile = destfile)
 
 # Ambulance handover delays -----------------------------------------------
 
@@ -100,7 +104,7 @@ curl_download(link, destfile = destfile)
 
 
 #Adjusted monthly time series 
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/03/Adjusted-Monthly-AE-Time-Series-February-2023-1.xls'
+link <- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/Adjusted-Monthly-AE-Time-Series-March-2023.xls'
 
 destfile <- here::here('data', "aevol.xls")
 curl_download(link, destfile = destfile)
@@ -126,7 +130,7 @@ curl_download(link, destfile = destfile)
 # Waiting times -----------------------------------------------------------
 
 
-link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/03/RTT-Overview-Timeseries-Including-Estimates-for-Missing-Trusts-Jan23-XLS-93K-03732.xlsx'
+link<- 'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/RTT-Overview-Timeseries-Including-Estimates-for-Missing-Trusts-Feb23-XLS-93K-55444.xlsx'
 
 destfile <- here::here('data', "waiting_times.xlsx")
 curl_download(link, destfile = destfile)
