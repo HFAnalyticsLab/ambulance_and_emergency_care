@@ -9,6 +9,7 @@ rm(list=ls())
 library(data.table)
 library(aws.s3)
 library(readr)
+library(hms)
 library(tidyverse)
 library(rio)
 library(lubridate)
@@ -20,6 +21,7 @@ library(ggtext)
 library(stringr)
 library(tsibble)
 library(janitor)
+
 
 #Functions
 
@@ -186,3 +188,119 @@ calcs<-amb_dta_clean %>%
   mutate(resp_time2=as_hms(resp_time2)) 
 
 calcs 
+
+
+
+# Data for access to care ------------------------------------------
+
+
+
+update_plot<-amb_dta_flourish %>% 
+  pivot_longer(contains("Category"), names_to="category", values_to="resp") %>% 
+  filter(org_name=="England (Average of all regions)") %>% 
+  pivot_wider(id_cols=c(date, monthyear, category) ,names_from=Metric, values_from=resp)
+
+
+write.csv(update_plot, "response_times.csv")
+
+
+#calculate average response times 
+
+#Date ranges
+dates_18_19<-format(as.Date(seq(ymd('2018-04-01'),ymd('2019-03-01'),by='1 month')),"%Y-%m-%d")
+dates_19_20<-format(as.Date(seq(ymd('2019-04-01'),ymd('2020-03-01'),by='1 month')),"%Y-%m-%d")
+dates_20_21<-format(as.Date(seq(ymd('2020-04-01'),ymd('2021-03-01'),by='1 month')),"%Y-%m-%d")
+dates_21_22<-format(as.Date(seq(ymd('2021-04-01'),ymd('2022-03-01'),by='1 month')),"%Y-%m-%d")
+dates_22_23<-format(as.Date(seq(ymd('2022-04-01'),ymd('2023-03-01'),by='1 month')),"%Y-%m-%d")
+dates_23_24<-format(as.Date(seq(ymd('2023-04-01'),ymd('2024-03-01'),by='1 month')),"%Y-%m-%d")
+dates_24_25<-format(as.Date(seq(ymd('2024-04-01'),ymd('2025-03-01'),by='1 month')),"%Y-%m-%d")
+list_dates<-c(dates_18_19, dates_19_20, dates_20_21, dates_21_22, dates_22_23, dates_23_24, dates_24_25)
+
+#Load data 
+amb_dta<-read_csv(here::here('data', "ambsys.csv"))
+
+
+amb_dta_clean_eng<-amb_dta %>% 
+  clean_names() %>% 
+  select(year:org_name, paste0("a",c(8,10:12, 24,30,33,36, 26,32,35,38)))
+
+#Region codes
+list_org_codes_region<-c("Y63", "Y62","Y60", "Y61", "Y56", "Y59", "Y58")
+
+#Rename columns 
+names(amb_dta_clean_eng)[c(6,10)]<-c(paste0("c1_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(7,11)]<-c(paste0("c2_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(8,12)]<-c(paste0("c3_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(9,13)]<-c(paste0("c4_",c("incidents", "RT")))
+names(amb_dta_clean_eng)[c(14:17)]<-c(paste0(c("c1","c2", "c3", "c4"),"_90RT"))
+
+
+amb_dta_clean_eng<-amb_dta_clean_eng %>% 
+  filter(org_code %in% c(list_org_codes_region)) %>% 
+  mutate(date=as.Date(paste0(year,"/",ifelse (month<10, paste0(0,month),month),"/",01))) 
+
+
+#Make columns numeric
+amb_dta_clean_eng[6:17]=lapply(amb_dta_clean_eng[6:17], FUN = function(y){gsub(",","",y)})
+amb_dta_clean_eng[6:17] = lapply(amb_dta_clean_eng[6:17], FUN = function(y){as.numeric(y)})
+
+london<-amb_dta_clean_eng %>% 
+  filter(region=="London") %>% 
+  filter(date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")))
+
+
+eng<-amb_dta_clean_eng %>% 
+  mutate(c1_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c1_incidents),
+         c2_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c2_incidents),
+         c3_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c3_incidents),
+         c4_incidents=ifelse(region=="London"& date %in% c(as.Date("2022-10-01"),as.Date("2022-11-01")), NA,c4_incidents)) %>% 
+  group_by(date) %>%
+  summarise(across(where(is.numeric), sum, na.rm=TRUE)) %>% 
+  mutate(org_code="Eng") %>% 
+  mutate(region="England") %>% 
+  mutate(org_name="England") %>% 
+  mutate(year=format(date, "%Y")) %>% 
+  mutate(month=format(date,"%m"))
+
+
+eng_average<-eng %>% 
+  filter(as.character(date) %in% list_dates) %>%
+  mutate(time=case_when(as.character(date) %in% dates_18_19 ~ "2018/19",
+                        as.character(date) %in% dates_19_20 ~ "2019/20",
+                        as.character(date) %in% dates_20_21 ~ "2020/21",
+                        as.character(date) %in% dates_21_22 ~ "2021/22",
+                        as.character(date) %in% dates_22_23 ~ "2022/23",
+                        as.character(date) %in% dates_23_24 ~ "2023/24",
+                        as.character(date) %in% dates_24_25 ~ "2024/25",
+                        TRUE ~ "NA")) %>%
+  group_by(time) %>%
+  summarise(across(where(is.numeric), ~ sum(.x, na.rm = TRUE))) %>%
+  mutate(c1_mean=round(c1_RT/c1_incidents), 
+         c2_mean=round(c2_RT/c2_incidents), 
+         c3_mean=round(c3_RT/c3_incidents),
+         c4_mean=round(c4_RT/c4_incidents)) %>% 
+  mutate(c1_mean=as.POSIXct(as.numeric(c1_mean),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c1_mean=format(c1_mean, format="%H:%M:%S")) %>% 
+  mutate(c1_mean=as_hms(c1_mean)) %>% 
+  mutate(c2_mean=as.POSIXct(as.numeric(c2_mean),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c2_mean=format(c2_mean, format="%H:%M:%S")) %>% 
+  mutate(c2_mean=as_hms(c2_mean)) %>% 
+  mutate(c3_mean=as.POSIXct(as.numeric(c3_mean),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c3_mean=format(c3_mean, format="%H:%M:%S")) %>% 
+  mutate(c3_mean=as_hms(c3_mean)) %>% 
+  mutate(c4_mean=as.POSIXct(as.numeric(c4_mean),origin = "1970-01-01", tz="GMT")) %>% 
+  mutate(c4_mean=format(c4_mean, format="%H:%M:%S")) %>% 
+  mutate(c4_mean=as_hms(c4_mean))
+
+
+
+
+eng_percent_change<-eng_average %>% 
+  select(time, contains("mean")) %>% 
+   pivot_longer(contains("mean"), names_to="metric", values_to="resp") %>% 
+  pivot_wider(id_cols="metric", names_from="time", values_from="resp", names_prefix = "year_") %>% 
+  mutate(
+    year_2018_19 = as.numeric(`year_2018/19`),
+    year_2023_24 = as.numeric(`year_2023/24`),
+    percent_change = (year_2023_24 - year_2018_19) / year_2018_19 * 100
+  )

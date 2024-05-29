@@ -11,7 +11,7 @@ library(here)
 
 # Ambulance Quality Indicators ---------------------------------------------
 
-link <-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/AmbSYS-up-to-Mar-2023.csv'
+link <-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2024/05/AmbSYS-to-April-2024.csv'
 
 destfile <- here::here('data', "ambsys.csv")
 curl_download(link, destfile = destfile)
@@ -98,6 +98,13 @@ link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2023/04/
 
 destfile <- here::here('data', "raw2022handovers.xlsx")
 curl_download(link, destfile = destfile)
+
+#2023
+link<-'https://www.england.nhs.uk/statistics/wp-content/uploads/sites/2/2024/04/Web-File-Timeseries-Ambulance-Collection.xlsx'
+
+destfile <- here::here('data', "raw2023handovers.xlsx")
+curl_download(link, destfile = destfile)
+
 
 
 # A&E admissions and waiting times ----------------------------------------

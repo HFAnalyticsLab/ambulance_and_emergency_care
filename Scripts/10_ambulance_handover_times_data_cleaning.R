@@ -270,6 +270,67 @@ saveRDS(amball202223, file="amball202223.rds")
 
 
 
+# 2023 --------------------------------------------------------------------
+
+
+x2023handovers<-read_excel("data/raw2023handovers.xlsx", sheet='All handovers', range="F14:BNR19")
+
+
+ambdelay<-x2023handovers %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  select(group=V1, metric=V2, count=V5) %>% 
+  fill(group, .direction="down")
+
+
+rownames(ambdelay) <-NULL
+
+
+ambdelay<-ambdelay %>% 
+  filter(group=="Count of all handovers (ED and non-ED inclusive)") %>% 
+  mutate(metric2=case_when(str_detect(metric, "Handover time known")~ "denom", 
+                          str_detect(metric, "Over 30")~ "numdelays30plus", 
+                          str_detect(metric, "Over 60")~ "numdelays60plus", 
+                          str_detect(metric, "Over 15")~ "numdelays15plus")) %>% 
+  filter(!is.na(metric2)) %>% 
+  select(-c(metric, group)) 
+  
+
+
+longtest1 <- ambdelay %>%
+  filter(metric2=="denom") %>% 
+  select(denom=count)
+longtest2 <- ambdelay %>%
+  filter(metric2=="numdelays60plus") %>% 
+  select(numdelays60plus=count)
+longtest3 <- ambdelay %>%
+  filter(metric2=="numdelays30plus") %>% 
+  select(numdelays30plus=count)
+
+longtest1 <- longtest1 %>%
+  mutate(date=format(as.Date(seq(ymd('2023-11-20'),ymd('2024-03-31'), by='1 day')),"%Y-%m-%d"))
+longtest2 <- longtest2 %>%
+  mutate(date=format(as.Date(seq(ymd('2023-11-20'),ymd('2024-03-31'), by='1 day')),"%Y-%m-%d"))
+longtest3 <- longtest3 %>%
+  mutate(date=format(as.Date(seq(ymd('2023-11-20'),ymd('2024-03-31'), by='1 day')),"%Y-%m-%d"))
+
+amball <- merge(longtest1,longtest2, by="date")
+amball <- merge(amball,longtest3, by="date")
+
+amball202324 <- amball %>%
+  mutate(denom=as.numeric(denom)) %>%
+  mutate(numdelays60plus=as.numeric(numdelays60plus)) %>%
+  mutate(numdelays30plus=as.numeric(numdelays30plus)) %>%
+  mutate(numdelays3060=numdelays30plus-numdelays60plus) %>% 
+  mutate(pctdelay60plus=numdelays60plus*100/denom) %>%
+  mutate(pctdelay60plus=na_if(pctdelay60plus, Inf)) %>%
+  mutate(pctdelay3060=numdelays3060*100/denom) %>%
+  mutate(pctdelay3060=na_if(pctdelay3060, Inf)) %>% 
+  mutate(date2=date2ISOweek(date)) %>% 
+  mutate(date2=str_sub(date2,0,8)) %>% 
+  select(-numdelays30plus)
+
+
 # Combine data ------------------------------------------------------------
 
 
@@ -278,14 +339,15 @@ amball201723 <- rbind(amball201723,amball201920)
 amball201723 <- rbind(amball201723,amball202021)
 amball201723 <- rbind(amball201723,amball202122)
 amball201723 <- rbind(amball201723,amball202223)
+amball201724 <- rbind(amball201723,amball202324)
 
 #saveRDS(amball201722, file="amball201722.rds")
 
 #Save data
 buck <- 'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean' ## my bucket name
 
-s3write_using(amball201723 # What R object we are saving
+s3write_using(amball201724 # What R object we are saving
               , FUN = write.csv # Which R function we are using to save
-              , object = 'amball201722.csv' # Name of the file to save to (include file type)
+              , object = 'amball201724.csv' # Name of the file to save to (include file type)
               , bucket = buck) # Bucket name defined above
 
