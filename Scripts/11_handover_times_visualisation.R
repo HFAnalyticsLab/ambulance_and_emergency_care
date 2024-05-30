@@ -7,6 +7,7 @@ rm(list=ls())
 
 #Library
 library(aws.s3)
+library(hms)
 library(tidyverse)
 library(ggplot2)
 library(ISOweek)
@@ -141,12 +142,33 @@ t<-summamb %>%
         legend.box.margin=margin(-10,-10,-10,-10))
 
 
-t<-summamb %>% 
-  #rename("Handovers within 30-60 mins(%)"=mean3060,  "Handovers taking more than 60 mins(%)"=mean60plus)
-  group_by(year) %>% 
-  mutate(row_number = row_number()) %>% 
-  arrange(row_number) %>% 
-  mutate(week_label=factor(week, levels=unique(week[order(row_number)]))) %>% 
-    pivot_wider(id_cols=week_label, names_from=year, values_from=mean30plus)
+# data update for access to care ----------------------------------------------------
 
-write.csv(t, "30plus.csv")
+# 
+# t<-summamb %>% 
+#   #rename("Handovers within 30-60 mins(%)"=mean3060,  "Handovers taking more than 60 mins(%)"=mean60plus)
+#   group_by(year) %>% 
+#   mutate(row_number = row_number()) %>% 
+#   arrange(row_number) %>% 
+#   mutate(week_label=factor(week, levels=unique(week[order(row_number)]))) %>% 
+#     pivot_wider(id_cols=week_label, names_from=year, values_from=mean30plus)
+# 
+# write.csv(t, "30plus.csv")
+# 
+
+
+#calcs mean percentage of handovers that exceeds the 30 minutes mark by year
+
+mean_percent<-amball %>%
+  drop_na(pctdelay60plus) %>%
+  drop_na(pctdelay3060) %>%
+  group_by(year) %>%
+  mutate(mean60plus=mean(pctdelay60plus), mean3060=mean(pctdelay3060), n=n()) %>% 
+  mutate(mean30plus=mean3060+mean60plus) %>% 
+  select(c(year, year,mean60plus,mean3060,mean30plus, n)) %>% 
+  distinct() %>% 
+  mutate(mean60plus=paste0(round(mean60plus,2),"%)"), mean3060=paste0(round(mean3060,2),"%"), mean30plus=paste0(round(mean30plus,2),"%"))
+
+mean_percent
+
+write.csv(mean_percent, "mean_percent.csv")

@@ -198,7 +198,12 @@ calcs
 update_plot<-amb_dta_flourish %>% 
   pivot_longer(contains("Category"), names_to="category", values_to="resp") %>% 
   filter(org_name=="England (Average of all regions)") %>% 
-  pivot_wider(id_cols=c(date, monthyear, category) ,names_from=Metric, values_from=resp)
+  pivot_wider(id_cols=c(date, monthyear, category) ,names_from=Metric, values_from=resp) %>% 
+  mutate (target=case_when(category=="Category 1" ~ 7, 
+                           category=="Category 2"~ 30, 
+                           category=="Category 3"~ 120, 
+                           category=="Category 4"~  180))
+  
 
 
 write.csv(update_plot, "response_times.csv")
