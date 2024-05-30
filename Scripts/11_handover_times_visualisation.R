@@ -14,6 +14,7 @@ library(ISOweek)
 library(ggh4x)
 library(tsibble)
 library(lubridate)
+library(stringr)
 
 # Data load ---------------------------------------------------------------
 buck<-'thf-dap-tier0-projects-iht-067208b7-projectbucket-1mrmynh0q7ljp/ambulance/clean'
@@ -143,19 +144,24 @@ t<-summamb %>%
 
 
 # data update for access to care ----------------------------------------------------
-
 # 
-# t<-summamb %>% 
-#   #rename("Handovers within 30-60 mins(%)"=mean3060,  "Handovers taking more than 60 mins(%)"=mean60plus)
-#   group_by(year) %>% 
-#   mutate(row_number = row_number()) %>% 
-#   arrange(row_number) %>% 
-#   mutate(week_label=factor(week, levels=unique(week[order(row_number)]))) %>% 
-#     pivot_wider(id_cols=week_label, names_from=year, values_from=mean30plus)
+# 
+# t<-amball %>%
+#   ungroup() %>% 
+#   mutate(month=format(as.Date(date), "%b")) %>% 
+#   group_by(month) %>%
+#   drop_na(pctdelay60plus) %>%
+#   drop_na(pctdelay3060) %>%
+#   group_by(monthyear) %>%
+#   mutate(mean60plus=mean(pctdelay60plus), mean3060=mean(pctdelay3060), n=n()) %>% 
+#   mutate(mean30plus=mean3060+mean60plus) %>% 
+#   select(c(month, monthyear, year,mean30plus)) %>% 
+#   distinct() %>% 
+#   pivot_wider(id_cols=month, names_from=year, values_from=mean30plus)
 # 
 # write.csv(t, "30plus.csv")
 # 
-
+# 
 
 #calcs mean percentage of handovers that exceeds the 30 minutes mark by year
 
@@ -165,10 +171,12 @@ mean_percent<-amball %>%
   group_by(year) %>%
   mutate(mean60plus=mean(pctdelay60plus), mean3060=mean(pctdelay3060), n=n()) %>% 
   mutate(mean30plus=mean3060+mean60plus) %>% 
-  select(c(year, year,mean60plus,mean3060,mean30plus, n)) %>% 
+  select(c(year,mean60plus,mean3060,mean30plus, n)) %>% 
   distinct() %>% 
-  mutate(mean60plus=paste0(round(mean60plus,2),"%)"), mean3060=paste0(round(mean3060,2),"%"), mean30plus=paste0(round(mean30plus,2),"%"))
+  mutate(mean60plus=paste0(round(mean60plus,2),"%"), mean3060=paste0(round(mean3060,2),"%"), mean30plus=paste0(round(mean30plus,2),"%")) 
 
-mean_percent
+# mean_percent %>% 
+#   ggplot(aes(x=year, y=mean30plus, colour=year, group=year))+
+#   geom_line()
 
 write.csv(mean_percent, "mean_percent.csv")
